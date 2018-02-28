@@ -1,0 +1,58 @@
+
+*External dependencies
+
+- TurboJPEG Library
+- LibPNG
+- CUDA 8
+- Optix 4.0.2
+
+*Compilation
+
+SightOptix was developed in Nvidia NSight. The project can be imported from menu File->Import. 
+
+Make files are included in Release directory, include and library paths, should be updated with yours. After compilation,
+SighOptix executable should be move to Sight's main directory.
+
+*Running Sight locally
+
+
+1. Run the Server:
+
+ ./sight [file] decimationFactor
+
+file 			- file format is space separated values including x,y,z coordinates and a scalar value
+Decimation factor	- Decimates the dataset by a given value, e.g. using a value of four will decimate the dataset by four
+
+Once dataset is loaded Sight Server will listen to port 9002. Make sure this port is open.
+
+2. Run the Client
+
+Open HTMLClient directory and double click on client.html file, then make click on "Connect" button. You can take snapshot by
+clicking on "Capture" button. Snapshots will be saved in Sight main directory.
+
+*Running Sight remotely
+
+1. Server Configuration
+
+Copy the necessary files (datasets, Sight, dependencies, etc.) to the remote location.
+
+Open SightOptix/frameserver/header/cBroadCastServer.h file, comment FULLHD macro (+/- line 20) and uncomment REMOTE macro (+/- line 19). Follow
+compilation instructions. 
+
+2. Client Configuration
+
+Open SightOptix/HTMLClient/websocketConnection.js, set  jpegCompression variable (+/- line 16) to true. Save the file.
+
+3. Once configuration is done, you'll need two terminals.
+
+In terminal 1 follow these steps:
+
+- Connect to your remote server (and launch and interactive job).
+- Check which node  is running  the interactive job (this will be used for  tunneling):
+- Run Sight as explained in "Running Sight Locally" Section, make sure 9002 port is open.
+
+In Terminal 2  open a tunneling connection with the node is running the interactive job using port 9002:
+
+$ ssh userid@myserver.com -L 9002:myNodeName:9002
+
+In your local system run the client as explained before.
