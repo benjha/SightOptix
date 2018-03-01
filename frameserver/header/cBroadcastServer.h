@@ -16,8 +16,8 @@
 #include <websocketpp/server.hpp>
 #include <functional>
 
-#define REMOTE
-//#define	FULLHD
+//#define REMOTE
+#define	FULLHD
 //#define EVEREST
 
 

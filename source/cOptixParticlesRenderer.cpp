@@ -430,7 +430,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 	unsigned int	posIdx = 0;
 	unsigned int 	ncolors = 128;
 	double 			color[3*ncolors];
-	cColorTable 	colorTab ("PuRd");
+	cColorTable 	colorTab ("orange");
 
 	colorTab.Sample (ncolors, color);
 

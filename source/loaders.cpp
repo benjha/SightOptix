@@ -72,16 +72,31 @@ int loadAscii (const char* filename, std::vector<float> *positions, std::vector<
 
 			energy = strtof(ptr, &end);
 
-			min[0] = Min<float> (x, min[0]);
-			min[1] = Min<float> (y, min[1]);
-			min[2] = Min<float>  (z, min[2]);
+			if (numParticles == 0)
+			{
+				min[0] = x;
+				min[1] = y;
+				min[2] = z;
+				min[3] = energy;
 
-			max[0] = Max<float> (x, max[0]);
-			max[1] = Max<float> (y, max[1]);
-			max[2] = Max<float> (z, max[2]);
+				max[0] = x;
+				max[1] = y;
+				max[2] = z;
+				max[3] = energy;
+			}
+			else
+			{
+				min[0] = Min<float> (x, min[0]);
+				min[1] = Min<float> (y, min[1]);
+				min[2] = Min<float>  (z, min[2]);
 
-			min[3] = Min<float> (energy,min[3]);
-			max[3] = Max<float> (energy,max[3]);
+				max[0] = Max<float> (x, max[0]);
+				max[1] = Max<float> (y, max[1]);
+				max[2] = Max<float> (z, max[2]);
+
+				min[3] = Min<float> (energy,min[3]);
+				max[3] = Max<float> (energy,max[3]);
+			}
 
 
 			positions->push_back 	(x);
