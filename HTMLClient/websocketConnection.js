@@ -13,7 +13,7 @@ var ctx;
 var imgdata;
 var stop 	= false;
 var mouseDownFlag = false;
-var jpegCompression = true;
+var jpegCompression = false;
 
 //var imageheight = 512;
 //var imagewidth	= 512;
