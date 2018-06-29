@@ -40,6 +40,8 @@ struct BasicLight
 struct PerRayData_radiance
 {
   float3 result;
+  float3 albedo;
+  float3 normal;
   float importance;
   int depth;
 };
@@ -55,7 +57,7 @@ rtDeclareVariable(float3,       eye, , );
 rtDeclareVariable(float3,       U, , );
 rtDeclareVariable(float3,       V, , );
 rtDeclareVariable(float3,       W, , );
-rtDeclareVariable(float3,       bad_color, , );
+rtDeclareVariable(float4,       bad_color, , );
 rtDeclareVariable(float,        scene_epsilon, , );
 rtDeclareVariable(rtObject,		top_object, , );
 rtDeclareVariable(unsigned int,	radiance_ray_type, , );
@@ -73,7 +75,9 @@ rtBuffer<unsigned int, 2>        rnd_seeds;
 rtDeclareVariable(unsigned int,	 frame, , );
 rtDeclareVariable(float,         jitter_factor, ,) = 0.0f;
 
-rtBuffer<uchar4, 2>              output_buffer;
+rtBuffer<float4, 2>              output_buffer;
+rtBuffer<float4, 2>              albedo_buffer;
+rtBuffer<float4, 2>              normal_buffer;
 rtBuffer<float4, 2>              accum_buffer;
 
 
@@ -93,9 +97,13 @@ RT_PROGRAM void pinhole_camera()
 	float3 ray_origin = eye;
 	float3 ray_direction = normalize(d.x*U + d.y*V + W);
 
+    float3 albedo = make_float3(0.0f);
+    float3 normal = make_float3(0.0f);
+
 	optix::Ray ray = optix::make_Ray(ray_origin, ray_direction, radiance_ray_type, scene_epsilon, RT_DEFAULT_MAX );
 
 	PerRayData_radiance prd;
+    prd.result = make_float3(0.0f);
 	prd.importance = 1.f;
 	prd.depth = 0;
 
@@ -109,12 +117,15 @@ RT_PROGRAM void pinhole_camera()
 	output_buffer[launch_index] = make_color( make_float3(  pixel_time ) );
 #else
 	float4 acc_val = accum_buffer[launch_index];
-	if( frame > 0 )
+	if( frame > 1 ){
 		acc_val = lerp( acc_val, make_float4( prd.result, 0.f), 1.0f / static_cast<float>( frame+1 ) );
+	}
 	else
 		acc_val = make_float4(prd.result, 0.f);
-	output_buffer[launch_index] = make_color ( make_float3(acc_val) );
+	output_buffer[launch_index] = acc_val;
 	accum_buffer[launch_index] = acc_val;
+	albedo_buffer[launch_index] = make_float4(prd.albedo, 1.0f);
+	normal_buffer[launch_index] = make_float4(prd.normal,1.0f);
 	//output_buffer[launch_index] = make_float4( prd.result );
 #endif
 }
@@ -123,13 +134,19 @@ RT_PROGRAM void exception()
 {
   const unsigned int code = rtGetExceptionCode();
   rtPrintf( "Caught exception 0x%X at launch index (%d,%d)\n", code, launch_index.x, launch_index.y );
-  output_buffer[launch_index] = make_color( bad_color );
+  output_buffer[launch_index] = bad_color;
 }
 
 
 RT_PROGRAM void miss()
 {
-  prd_radiance.result = bg_color;
+	prd_radiance.result = bg_color;
+
+	if (prd_radiance.depth==0)
+	{
+		prd_radiance.albedo = bg_color;
+		prd_radiance.normal = make_float3(0.0f,0.0f,0.0f);
+	}
 }
 
 
@@ -327,6 +344,16 @@ RT_PROGRAM void closest_hit_radiance_AO_phong()
   float3 ffnormal = faceforward(world_shading_normal, -ray.direction, world_geometric_normal);
 
   optix::Onb onb(ffnormal);
+
+  // The albedo buffer should contain an approximation of the overall surface albedo (i.e. a single
+  // color value approximating the ratio of irradiance reflected to the irradiance received over the
+  // hemisphere). This can be approximated for very simple materials by using the diffuse color of
+  // the first hit.
+  if (prd_radiance.depth == 0)
+  {
+	  prd_radiance.albedo = shading_color;
+	  prd_radiance.normal = ffnormal;
+  }
 
   unsigned int seed = rot_seed(rnd_seeds[launch_index], frame + subframe_idx);
 

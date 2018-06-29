@@ -51,6 +51,8 @@ broadcast_server::broadcast_server() {
 	keyboardHandler = 0;
 	messageHandler = 0;
 
+
+
 #ifdef	JPEG_ENCODING
 	targetTime = TIME_RESPONSE;
 	jpegQuality = JPEG_QUALITY;
@@ -69,9 +71,9 @@ broadcast_server::broadcast_server() {
 	pngEncoder->setImageParams(IMAGE_WIDTH, IMAGE_HEIGHT);
 	if (!(pngEncoder->initEncoder()))
 	{
-		std::cout << "Warning: PNG Encoder failed at initialization \n";
+		std::cout << "Warning: Websocket's PNG Encoder failed at initialization \n";
 	}
-	std::cout << "\nPNG Encoder initialized\n";
+	std::cout << "\nWebsocket's PNG Encoder initialized\n";
 }
 //
 //=======================================================================================
@@ -263,6 +265,7 @@ void broadcast_server::sendFrame(unsigned char *img) {
 		std::cout << filename.str().data() << " saved!\n";
 		saveFrame = false;
 	}
+
 
 #ifdef JPEG_ENCODING
 

@@ -5,6 +5,8 @@
 
 #include <string.h>
 #include "../frameserver/header/cMouseEventHandler.h"
+#include "../frameserver/header/cKeyboardHandler.h"
+#include "../frameserver/header/cPNGEncoder.h"
 #include "../header/cOptixParticlesRenderer.h"
 #include "../header/Arcball.h"
 #include "../header/DeviceMemoryLogger.h"
@@ -22,7 +24,7 @@ cOptixParticlesRenderer::cOptixParticlesRenderer( )
 {
 	m_width 	= 1280;
 	m_height 	= 720;
-	m_frame		= 0;
+	m_frameAccum = 0;
 	m_context	= 0;
 	m_mouseH	= 0;
 	m_ao_sample_mult = 1;
@@ -32,12 +34,24 @@ cOptixParticlesRenderer::cOptixParticlesRenderer( )
 	m_lookAt	= (float3){0.0f, 0.0f, 0.0f };
 	m_up		= (float3){ 0.0f, 1.0f, 0.0f };
     m_rotate  	= Matrix4x4::identity();
+
+    m_pngEncoder 		= 0;
+	m_autosave			= false;
+	m_renderPassCounter	= 0;
+	m_numRenderSteps	= 10;
+	m_denoiserEnabled	= false;
 }
 
 cOptixParticlesRenderer::~cOptixParticlesRenderer ( )
 {
+#ifdef POST_PROCESSING
+	m_clDenoiser->destroy();
+	m_tonemapStage->destroy();
+	m_denoiserStage->destroy();
+#endif
 	m_context->destroy();
 	delete [] m_sphere;
+	delete m_pngEncoder;
 
 }
 //
@@ -53,7 +67,7 @@ void cOptixParticlesRenderer::init ( int width, int height, std::vector<float> *
 	//glm::vec3 pos (  max[0]+min[0] / 2.0, max[1]+min[1] / 2.0, max[2]+min[2] / 2.0  );
 
 	m_aabb.set( (float3) {min[0], min[1], min[2]}, (float3){max[0], max[1], max[2]} );
-    const float max_dim = fmaxf(m_aabb.extent(0), m_aabb.extent(1)); // max of x, y components
+    const float max_dim = fmaxf(m_aabb.extent(1), m_aabb.extent(2)); // max of y, z components
     m_eye    = m_aabb.center() + make_float3( 0.0f, 0.0f, max_dim*5.0f );
     m_lookAt = m_aabb.center();
 
@@ -96,6 +110,21 @@ void cOptixParticlesRenderer::init ( int width, int height, std::vector<float> *
 	  std::cout << e.getErrorString().c_str() << std::endl;
 	exit(1);
 	}
+
+#ifdef POST_PROCESSING
+	setupPostprocessing ();
+#endif
+
+	m_pngEncoder = new cPNGEncoder ();
+	m_pngEncoder->setImageParams(m_width, m_height);
+	if (!(m_pngEncoder->initEncoder()))
+	{
+		std::cout << "Warning: Renderer's PNG Encoder failed at initialization \n";
+	}
+	std::cout << "\nRenderer's PNG Encoder initialized\n";
+
+
+
 }
 //
 //=======================================================================================
@@ -103,6 +132,13 @@ void cOptixParticlesRenderer::init ( int width, int height, std::vector<float> *
 void cOptixParticlesRenderer::setMouseHandler (cMouseHandler *mouseH)
 {
 	m_mouseH = mouseH;
+}
+//
+//=======================================================================================
+//
+void cOptixParticlesRenderer::setKeyboardHandler (cKeyboardHandler *keyHandler)
+{
+	m_keyboardHandler = keyHandler;
 }
 //
 //=======================================================================================
@@ -222,25 +258,65 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 {
 	double fpsexpave = 0.0;
 	static unsigned frame_count = 0;
-	sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
-
 	if (m_mouseH->refreshed())
 	{
 		updateView ();
 		m_mouseH->refresh(false);
 
 	}
-	else
+	if ( m_keyboardHandler->refreshed())
 	{
+		onKeyboardEvent ( );
+		m_keyboardHandler->refresh( false );
+	}
+	//else
+	//{
 		// Use more AO samples if the camera is not moving.
 		// Do this above launch to avoid overweighting the first frame
 		//m_context["occlusion_distance"]->setFloat(1000.0f);
 		//m_context["sqrt_diffuse_samples"]->setInt( 3 );
-	    m_context["sqrt_occlusion_samples"]->setInt(3);
+	  //  m_context["sqrt_occlusion_samples"]->setInt(3);
+	//}
+
+	if (!m_denoiserEnabled)
+	{
+		m_context->launch( 0, m_width, m_height);
+		sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
+	}
+	if (m_denoiserEnabled && m_denoise)
+	{
+		m_clDenoiser->execute();
+		sutil::displayBuffer(pixels, m_denoisedBuffer->get());
+		// check albedo:
+		//sutil::displayBuffer(pixels, m_context["albedo_buffer"]->getBuffer()->get());
+		// check normals:
+		//sutil::displayBuffer(pixels, m_context["normal_buffer"]->getBuffer()->get());
 	}
 
-	m_context->launch( 0, m_width, m_height);
-	m_context["frame"]->setUint( ++m_frame );
+
+	m_context["frame"]->setUint( m_frameAccum++ );
+
+	if (m_autosave==true)
+	{
+		m_renderPassCounter++;
+	}
+	if (m_renderPassCounter==m_numRenderSteps)
+	{
+		char date[128];
+		time_t rawtime;
+		struct tm * timeinfo;
+		time(&rawtime);
+		timeinfo = localtime (&rawtime);
+		strftime (date,sizeof(date),"%Y-%m-%d_%OH_%OM_%OS",timeinfo);
+		std::stringstream filename;
+		filename << "Sight_AutoSave_" << date << ".png";
+		m_pngEncoder->savePNG(filename.str(), pixels);
+		std::cout << filename.str().data() << " saved!\n";
+		m_renderPassCounter = 0;
+		m_autosave = false;
+		m_denoise = true;
+	}
+
 
 	// The frame number is used as part of the random seed.
 	//m_context["frame"]->setInt( m_frame );
@@ -257,14 +333,38 @@ void cOptixParticlesRenderer::createContext ( 	)
 	m_context->setRayTypeCount( 2 );
 	m_context->setEntryPointCount( 1 );
 
+
+#ifndef POST_PROCESSING
 	// Output buffer
-	Buffer buffer =  m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_UNSIGNED_BYTE4, m_width, m_height );
+	Buffer buffer =  m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
+	m_context["output_buffer"]->set( buffer );
+
+	// Accumulation buffer
+	Buffer accum_buffer = m_context->createBuffer( RT_BUFFER_INPUT_OUTPUT | RT_BUFFER_GPU_LOCAL, RT_FORMAT_FLOAT4, m_width, m_height);
+	m_context["accum_buffer"]->set( accum_buffer );
+	//resetAccumulation();
+#else
+	// Output buffer
+	Buffer buffer =  m_context->createBuffer( RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
 	m_context["output_buffer"]->set( buffer );
 
 	// Accumulation buffer
 	Buffer accum_buffer = m_context->createBuffer( RT_BUFFER_INPUT_OUTPUT | RT_BUFFER_GPU_LOCAL, RT_FORMAT_FLOAT4, m_width, m_height);
 	m_context["accum_buffer"]->set( accum_buffer );
 	resetAccumulation();
+
+	Buffer tonemappedBuffer = m_context->createBuffer(RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height);
+	m_context["tonemapped_buffer"]->set(tonemappedBuffer);
+
+    Buffer albedoBuffer = m_context->createBuffer(RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height);
+    m_context["albedo_buffer"]->set(albedoBuffer);
+
+    Buffer normalBuffer = m_context->createBuffer(RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height);
+    m_context["normal_buffer"]->set(normalBuffer);
+
+    m_denoisedBuffer = m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
+
+#endif
 
 	std::string ptx_path( "shaders/shaders.ptx" );
 
@@ -275,7 +375,7 @@ void cOptixParticlesRenderer::createContext ( 	)
 	// Exception program
 	Program exception_program = m_context->createProgramFromPTXFile( ptx_path, "exception" );
 	m_context->setExceptionProgram( 0, exception_program );
-	m_context["bad_color"]->setFloat( 1.0f, 0.0f, 1.0f );
+	m_context["bad_color"]->setFloat( 1.0f, 0.0f, 1.0f, 0.0f );
 
 	// Miss program
 	m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( ptx_path, "miss" ) );
@@ -355,7 +455,7 @@ void cOptixParticlesRenderer::createContextProgressive (	)
 	m_context[ "scene_epsilon"      ]->setFloat( 0.01 );
 	m_context["jitter_factor"		]->setFloat( 1.0f);
 	m_context["max_depth"			]->setInt( 4 );
-	m_context["frame"				]->setInt( m_frame );
+	m_context["frame"				]->setInt( m_frameAccum );
 	m_context["eye"					]->setFloat( m_eye );
 	m_context["U"					]->setFloat( m_U );
 	m_context["V"					]->setFloat( m_V );
@@ -415,8 +515,8 @@ void cOptixParticlesRenderer::createMaterial(	)
     m_context["ambient_light_color"]->setFloat(1.0f,1.0f,1.0f);
 
     // AO shader
-    m_context["occlusion_distance"]->setFloat(200.0f);
-    m_context["sqrt_occlusion_samples"]->setInt(1);
+    m_context["occlusion_distance"]->setFloat(100.0f);
+    m_context["sqrt_occlusion_samples"]->setInt(4);
 
     Program transparent_ch = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "closest_hit_radiance" );
     Program transparent_ah = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "any_hit_shadow" );
@@ -478,6 +578,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 		//particles->setIntersectionProgram( m_context->createProgramFromPTXFile( "shaders/particles.ptx", "sphere_array_intersect" ) );
 		m_sphere[k]["particle_buffer"]->setBuffer ( posBuffer );
 		m_sphere[k]["color_buffer"]->setBuffer (colorBuffer);
+		m_sphere[k]["radius"]->setFloat(4.0f);
 	}
 
 	// loading the remaining particles
@@ -590,9 +691,9 @@ void cOptixParticlesRenderer::createInstance ()
 //
 void cOptixParticlesRenderer::resetAccumulation ()
 {
-	m_frame = 0;
+	m_frameAccum = 0;
 	m_context[ "frame"                  ]->setUint( 0 );
-	m_context[ "sqrt_occlusion_samples"	]->setInt(1);
+	//m_context[ "sqrt_occlusion_samples"	]->setInt(1);
 	//m_context[ "occlusion_distance"		]->setFloat(50.0f);
 }
 //
@@ -606,7 +707,63 @@ void cOptixParticlesRenderer::setBufferIds( const std::vector<Buffer>& buffers, 
 		data[i] = buffers[i]->getId();
 	top_level_buffer->unmap();
 }
+//
+//=======================================================================================
+//
+#ifdef POST_PROCESSING
+void cOptixParticlesRenderer::setupPostprocessing( )
+{
+	// create stages only once: they will be reused in several command lists without being re-created
+	m_tonemapStage = m_context->createBuiltinPostProcessingStage("TonemapperSimple");
+	m_denoiserStage = m_context->createBuiltinPostProcessingStage("DLDenoiser");
+
+	    // if an alternative trained file is available:
+//	    if (trainingDataBuffer)
+//	    {
+//	    	Variable trainingBuff = denoiserStage->declareVariable("training_data_buffer");
+//	        trainingBuff->set(trainingDataBuffer);
+//	    }
+
+	m_tonemapStage->declareVariable("input_buffer")->set( m_context["output_buffer"]->getBuffer());
+	m_tonemapStage->declareVariable("output_buffer")->set( m_context["tonemapped_buffer"]->getBuffer());
+	m_tonemapStage->declareVariable("exposure")->setFloat(0.25f);
+	m_tonemapStage->declareVariable("gamma")->setFloat(2.2f);
+
+	//m_denoiserStage->declareVariable("input_buffer")->set(m_context["tonemapped_buffer"]->getBuffer());
+	m_denoiserStage->declareVariable("input_buffer")->set(m_context["output_buffer"]->getBuffer());
+	m_denoiserStage->declareVariable("output_buffer")->set(m_denoisedBuffer);
+    m_denoiserStage->declareVariable("albedo_buffer");
+    m_denoiserStage->declareVariable("normal_buffer");
 
 
 
+	// Create two command lists with two postprocessing topologies we want:
+	// One with the denoiser stage, one without. Note that both share the same
+	// tonemap stage.
 
+	m_clDenoiser = m_context->createCommandList();
+	m_clDenoiser->appendLaunch(0, m_width, m_height);
+	//m_clDenoiser->appendPostprocessingStage(m_tonemapStage, m_width, m_height);
+	m_clDenoiser->appendPostprocessingStage(m_denoiserStage, m_width, m_height);
+	m_clDenoiser->finalize();
+
+
+}
+#endif
+//
+//=======================================================================================
+//
+void cOptixParticlesRenderer::onKeyboardEvent ()
+{
+	if ( m_keyboardHandler->getState() == cKeyboardHandler::DOWN )
+	{
+		int key = m_keyboardHandler->getKey();
+
+		switch (key)
+		{
+		case 'd':
+			m_denoiserEnabled = !m_denoiserEnabled;
+		}
+	}
+
+}

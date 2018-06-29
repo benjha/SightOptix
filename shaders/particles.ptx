@@ -13,6 +13,7 @@
 	// .globl	_Z22sphere_array_intersecti
 .global .align 1 .b8 particle_buffer[1];
 .global .align 1 .b8 color_buffer[1];
+.global .align 4 .f32 radius;
 .global .align 8 .b8 geometric_normal[12];
 .global .align 8 .b8 shading_normal[12];
 .global .align 8 .b8 shading_color[12];
@@ -43,22 +44,27 @@
 .global .align 4 .u32 _ZN21rti_internal_register14reg_rayIndex_xE;
 .global .align 4 .u32 _ZN21rti_internal_register14reg_rayIndex_yE;
 .global .align 4 .u32 _ZN21rti_internal_register14reg_rayIndex_zE;
+.global .align 4 .b8 _ZN21rti_internal_typeinfo6radiusE[8] = {82, 97, 121, 0, 4, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo16geometric_normalE[8] = {82, 97, 121, 0, 12, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo14shading_normalE[8] = {82, 97, 121, 0, 12, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo13shading_colorE[8] = {82, 97, 121, 0, 12, 0, 0, 0};
 .global .align 4 .b8 _ZN21rti_internal_typeinfo3rayE[8] = {82, 97, 121, 0, 36, 0, 0, 0};
+.global .align 1 .b8 _ZN21rti_internal_typename6radiusE[6] = {102, 108, 111, 97, 116, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename16geometric_normalE[7] = {102, 108, 111, 97, 116, 51, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename14shading_normalE[7] = {102, 108, 111, 97, 116, 51, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename13shading_colorE[7] = {102, 108, 111, 97, 116, 51, 0};
 .global .align 1 .b8 _ZN21rti_internal_typename3rayE[11] = {111, 112, 116, 105, 120, 58, 58, 82, 97, 121, 0};
+.global .align 4 .u32 _ZN21rti_internal_typeenum6radiusE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum16geometric_normalE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum14shading_normalE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum13shading_colorE = 4919;
 .global .align 4 .u32 _ZN21rti_internal_typeenum3rayE = 4919;
+.global .align 1 .b8 _ZN21rti_internal_semantic6radiusE[1];
 .global .align 1 .b8 _ZN21rti_internal_semantic16geometric_normalE[27] = {97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 103, 101, 111, 109, 101, 116, 114, 105, 99, 95, 110, 111, 114, 109, 97, 108, 0};
 .global .align 1 .b8 _ZN21rti_internal_semantic14shading_normalE[25] = {97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 115, 104, 97, 100, 105, 110, 103, 95, 110, 111, 114, 109, 97, 108, 0};
 .global .align 1 .b8 _ZN21rti_internal_semantic13shading_colorE[24] = {97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 115, 104, 97, 100, 105, 110, 103, 95, 99, 111, 108, 111, 114, 0};
 .global .align 1 .b8 _ZN21rti_internal_semantic3rayE[13] = {114, 116, 67, 117, 114, 114, 101, 110, 116, 82, 97, 121, 0};
+.global .align 1 .b8 _ZN23rti_internal_annotation6radiusE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation16geometric_normalE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation14shading_normalE[1];
 .global .align 1 .b8 _ZN23rti_internal_annotation13shading_colorE[1];
@@ -175,7 +181,7 @@ BB0_5:
 )
 {
 	.reg .pred 	%p<3>;
-	.reg .f32 	%f<41>;
+	.reg .f32 	%f<48>;
 	.reg .b32 	%r<8>;
 	.reg .b64 	%rd<16>;
 
@@ -205,37 +211,44 @@ BB0_5:
 	mul.f32 	%f22, %f2, %f2;
 	fma.rn.f32 	%f23, %f1, %f1, %f22;
 	fma.rn.f32 	%f24, %f3, %f3, %f23;
-	add.f32 	%f25, %f24, 0fBF800000;
-	mul.f32 	%f26, %f7, %f7;
-	sub.f32 	%f8, %f26, %f25;
+	ld.global.f32 	%f25, [radius];
+	mul.f32 	%f26, %f25, %f25;
+	sub.f32 	%f27, %f24, %f26;
+	mul.f32 	%f28, %f7, %f7;
+	sub.f32 	%f8, %f28, %f27;
 	setp.leu.f32	%p1, %f8, 0f00000000;
 	@%p1 bra 	BB1_3;
 
-	sqrt.rn.f32 	%f28, %f8;
-	neg.f32 	%f29, %f7;
-	sub.f32 	%f30, %f29, %f28;
-	add.f32 	%f27, %f30, 0f00000000;
+	sqrt.rn.f32 	%f30, %f8;
+	neg.f32 	%f31, %f7;
+	sub.f32 	%f32, %f31, %f30;
+	add.f32 	%f29, %f32, 0f00000000;
 	// inline asm
-	call (%r3), _rt_potential_intersection, (%f27);
+	call (%r3), _rt_potential_intersection, (%f29);
 	// inline asm
 	setp.eq.s32	%p2, %r3, 0;
 	@%p2 bra 	BB1_3;
 
-	fma.rn.f32 	%f31, %f6, %f27, %f3;
-	fma.rn.f32 	%f32, %f5, %f27, %f2;
-	fma.rn.f32 	%f33, %f4, %f27, %f1;
-	st.global.v2.f32 	[geometric_normal], {%f33, %f32};
-	st.global.f32 	[geometric_normal+8], %f31;
-	st.global.v2.f32 	[shading_normal], {%f33, %f32};
-	st.global.f32 	[shading_normal+8], %f31;
+	fma.rn.f32 	%f33, %f4, %f29, %f1;
+	fma.rn.f32 	%f34, %f5, %f29, %f2;
+	fma.rn.f32 	%f35, %f6, %f29, %f3;
+	ld.global.f32 	%f36, [radius];
+	rcp.rn.f32 	%f37, %f36;
+	mul.f32 	%f38, %f35, %f37;
+	mul.f32 	%f39, %f34, %f37;
+	mul.f32 	%f40, %f33, %f37;
+	st.global.v2.f32 	[geometric_normal], {%f40, %f39};
+	st.global.f32 	[geometric_normal+8], %f38;
+	st.global.v2.f32 	[shading_normal], {%f40, %f39};
+	st.global.f32 	[shading_normal+8], %f38;
 	mov.u64 	%rd15, color_buffer;
 	cvta.global.u64 	%rd10, %rd15;
 	// inline asm
 	call (%rd9), _rt_buffer_get_64, (%rd10, %r1, %r2, %rd4, %rd7, %rd7, %rd7);
 	// inline asm
-	ld.v4.f32 	{%f34, %f35, %f36, %f37}, [%rd9];
-	st.global.v2.f32 	[shading_color], {%f34, %f35};
-	st.global.f32 	[shading_color+8], %f36;
+	ld.v4.f32 	{%f41, %f42, %f43, %f44}, [%rd9];
+	st.global.v2.f32 	[shading_color], {%f41, %f42};
+	st.global.f32 	[shading_color+8], %f43;
 	mov.u32 	%r7, 0;
 	// inline asm
 	call (%r6), _rt_report_intersection, (%r7);
@@ -251,7 +264,7 @@ BB1_3:
 )
 {
 	.reg .pred 	%p<5>;
-	.reg .f32 	%f<64>;
+	.reg .f32 	%f<72>;
 	.reg .b32 	%r<8>;
 	.reg .b64 	%rd<16>;
 
@@ -265,81 +278,89 @@ BB1_3:
 	// inline asm
 	call (%rd2), _rt_buffer_get_64, (%rd3, %r1, %r2, %rd4, %rd7, %rd7, %rd7);
 	// inline asm
-	ld.global.f32 	%f15, [ray];
-	ld.v4.f32 	{%f16, %f17, %f18, %f19}, [%rd2];
-	sub.f32 	%f1, %f15, %f16;
-	ld.global.f32 	%f23, [ray+4];
-	sub.f32 	%f2, %f23, %f17;
-	ld.global.f32 	%f24, [ray+8];
-	sub.f32 	%f3, %f24, %f18;
+	ld.global.f32 	%f17, [ray];
+	ld.v4.f32 	{%f18, %f19, %f20, %f21}, [%rd2];
+	sub.f32 	%f1, %f17, %f18;
+	ld.global.f32 	%f25, [ray+4];
+	sub.f32 	%f2, %f25, %f19;
+	ld.global.f32 	%f26, [ray+8];
+	sub.f32 	%f3, %f26, %f20;
 	ld.global.f32 	%f6, [ray+20];
 	ld.global.f32 	%f4, [ray+12];
 	ld.global.f32 	%f5, [ray+16];
-	mul.f32 	%f25, %f2, %f5;
-	fma.rn.f32 	%f26, %f1, %f4, %f25;
-	fma.rn.f32 	%f7, %f3, %f6, %f26;
-	mul.f32 	%f27, %f2, %f2;
-	fma.rn.f32 	%f28, %f1, %f1, %f27;
-	fma.rn.f32 	%f29, %f3, %f3, %f28;
-	add.f32 	%f30, %f29, 0fBF800000;
-	mul.f32 	%f31, %f7, %f7;
-	sub.f32 	%f8, %f31, %f30;
-	setp.leu.f32	%p1, %f8, 0f00000000;
+	mul.f32 	%f27, %f2, %f5;
+	fma.rn.f32 	%f28, %f1, %f4, %f27;
+	fma.rn.f32 	%f7, %f3, %f6, %f28;
+	mul.f32 	%f29, %f2, %f2;
+	fma.rn.f32 	%f30, %f1, %f1, %f29;
+	fma.rn.f32 	%f31, %f3, %f3, %f30;
+	ld.global.f32 	%f8, [radius];
+	mul.f32 	%f9, %f8, %f8;
+	sub.f32 	%f32, %f31, %f9;
+	mul.f32 	%f33, %f7, %f7;
+	sub.f32 	%f10, %f33, %f32;
+	setp.leu.f32	%p1, %f10, 0f00000000;
 	@%p1 bra 	BB2_6;
 
-	sqrt.rn.f32 	%f33, %f8;
-	neg.f32 	%f34, %f7;
-	sub.f32 	%f9, %f34, %f33;
-	abs.f32 	%f35, %f9;
-	mov.f32 	%f63, 0f00000000;
-	setp.leu.f32	%p2, %f35, 0f41200000;
+	sqrt.rn.f32 	%f35, %f10;
+	neg.f32 	%f36, %f7;
+	sub.f32 	%f11, %f36, %f35;
+	abs.f32 	%f37, %f11;
+	mul.f32 	%f38, %f8, 0f41200000;
+	mov.f32 	%f71, 0f00000000;
+	setp.leu.f32	%p2, %f37, %f38;
 	@%p2 bra 	BB2_4;
 
-	ld.global.f32 	%f37, [ray+12];
-	ld.global.f32 	%f38, [ray+16];
-	ld.global.f32 	%f39, [ray+20];
-	fma.rn.f32 	%f40, %f9, %f37, %f1;
-	fma.rn.f32 	%f41, %f9, %f38, %f2;
-	fma.rn.f32 	%f42, %f9, %f39, %f3;
-	mul.f32 	%f43, %f5, %f41;
-	fma.rn.f32 	%f44, %f4, %f40, %f43;
-	fma.rn.f32 	%f10, %f6, %f42, %f44;
-	mul.f32 	%f45, %f41, %f41;
-	fma.rn.f32 	%f46, %f40, %f40, %f45;
-	fma.rn.f32 	%f47, %f42, %f42, %f46;
-	add.f32 	%f48, %f47, 0fBF800000;
-	mul.f32 	%f49, %f10, %f10;
-	sub.f32 	%f11, %f49, %f48;
-	setp.leu.f32	%p3, %f11, 0f00000000;
+	ld.global.f32 	%f40, [ray+12];
+	ld.global.f32 	%f41, [ray+16];
+	ld.global.f32 	%f42, [ray+20];
+	fma.rn.f32 	%f43, %f11, %f40, %f1;
+	fma.rn.f32 	%f44, %f11, %f41, %f2;
+	fma.rn.f32 	%f45, %f11, %f42, %f3;
+	mul.f32 	%f46, %f5, %f44;
+	fma.rn.f32 	%f47, %f4, %f43, %f46;
+	fma.rn.f32 	%f12, %f6, %f45, %f47;
+	mul.f32 	%f48, %f44, %f44;
+	fma.rn.f32 	%f49, %f43, %f43, %f48;
+	fma.rn.f32 	%f50, %f45, %f45, %f49;
+	sub.f32 	%f51, %f50, %f9;
+	mul.f32 	%f52, %f12, %f12;
+	sub.f32 	%f13, %f52, %f51;
+	setp.leu.f32	%p3, %f13, 0f00000000;
 	@%p3 bra 	BB2_4;
 
-	sqrt.rn.f32 	%f50, %f11;
-	neg.f32 	%f51, %f10;
-	sub.f32 	%f63, %f51, %f50;
+	sqrt.rn.f32 	%f53, %f13;
+	neg.f32 	%f54, %f12;
+	sub.f32 	%f71, %f54, %f53;
 
 BB2_4:
-	add.f32 	%f52, %f9, %f63;
+	add.f32 	%f55, %f11, %f71;
 	// inline asm
-	call (%r3), _rt_potential_intersection, (%f52);
+	call (%r3), _rt_potential_intersection, (%f55);
 	// inline asm
 	setp.eq.s32	%p4, %r3, 0;
 	@%p4 bra 	BB2_6;
 
-	fma.rn.f32 	%f53, %f6, %f52, %f3;
-	fma.rn.f32 	%f54, %f5, %f52, %f2;
-	fma.rn.f32 	%f55, %f4, %f52, %f1;
-	st.global.v2.f32 	[geometric_normal], {%f55, %f54};
-	st.global.f32 	[geometric_normal+8], %f53;
-	st.global.v2.f32 	[shading_normal], {%f55, %f54};
-	st.global.f32 	[shading_normal+8], %f53;
+	fma.rn.f32 	%f56, %f4, %f55, %f1;
+	fma.rn.f32 	%f57, %f5, %f55, %f2;
+	fma.rn.f32 	%f58, %f6, %f55, %f3;
+	ld.global.f32 	%f59, [radius];
+	rcp.rn.f32 	%f60, %f59;
+	mul.f32 	%f61, %f58, %f60;
+	mul.f32 	%f62, %f57, %f60;
+	mul.f32 	%f63, %f56, %f60;
+	st.global.v2.f32 	[geometric_normal], {%f63, %f62};
+	st.global.f32 	[geometric_normal+8], %f61;
+	st.global.v2.f32 	[shading_normal], {%f63, %f62};
+	st.global.f32 	[shading_normal+8], %f61;
 	mov.u64 	%rd15, color_buffer;
 	cvta.global.u64 	%rd10, %rd15;
 	// inline asm
 	call (%rd9), _rt_buffer_get_64, (%rd10, %r1, %r2, %rd4, %rd7, %rd7, %rd7);
 	// inline asm
-	ld.v4.f32 	{%f56, %f57, %f58, %f59}, [%rd9];
-	st.global.v2.f32 	[shading_color], {%f56, %f57};
-	st.global.f32 	[shading_color+8], %f58;
+	ld.v4.f32 	{%f64, %f65, %f66, %f67}, [%rd9];
+	st.global.v2.f32 	[shading_color], {%f64, %f65};
+	st.global.f32 	[shading_color+8], %f66;
 	mov.u32 	%r7, 0;
 	// inline asm
 	call (%r6), _rt_report_intersection, (%r7);
@@ -355,35 +376,62 @@ BB2_6:
 	.param .u64 _Z6boundsiPf_param_1
 )
 {
-	.reg .f32 	%f<14>;
-	.reg .b32 	%r<3>;
-	.reg .b64 	%rd<10>;
+	.reg .pred 	%p<6>;
+	.reg .f32 	%f<17>;
+	.reg .b32 	%r<5>;
+	.reg .b64 	%rd<11>;
 
 
-	ld.param.u64 	%rd7, [_Z6boundsiPf_param_1];
-	ld.param.s32 	%rd3, [_Z6boundsiPf_param_0];
-	mov.u64 	%rd8, particle_buffer;
-	cvta.global.u64 	%rd2, %rd8;
+	ld.param.u64 	%rd3, [_Z6boundsiPf_param_1];
+	ld.param.s32 	%rd6, [_Z6boundsiPf_param_0];
+	mov.u64 	%rd10, particle_buffer;
+	cvta.global.u64 	%rd5, %rd10;
 	mov.u32 	%r1, 1;
 	mov.u32 	%r2, 16;
-	mov.u64 	%rd6, 0;
+	mov.u64 	%rd9, 0;
 	// inline asm
-	call (%rd1), _rt_buffer_get_64, (%rd2, %r1, %r2, %rd3, %rd6, %rd6, %rd6);
+	call (%rd4), _rt_buffer_get_64, (%rd5, %r1, %r2, %rd6, %rd9, %rd9, %rd9);
 	// inline asm
-	ld.v4.f32 	{%f1, %f2, %f3, %f4}, [%rd1];
-	cvta.to.global.u64 	%rd9, %rd7;
-	add.f32 	%f8, %f1, 0fBF800000;
-	add.f32 	%f9, %f2, 0fBF800000;
-	add.f32 	%f10, %f3, 0fBF800000;
-	st.global.f32 	[%rd9], %f8;
-	st.global.f32 	[%rd9+4], %f9;
-	st.global.f32 	[%rd9+8], %f10;
-	add.f32 	%f11, %f1, 0f3F800000;
-	add.f32 	%f12, %f2, 0f3F800000;
-	add.f32 	%f13, %f3, 0f3F800000;
-	st.global.f32 	[%rd9+12], %f11;
-	st.global.f32 	[%rd9+16], %f12;
-	st.global.f32 	[%rd9+20], %f13;
+	ld.v4.f32 	{%f6, %f7, %f8, %f9}, [%rd4];
+	ld.global.f32 	%f5, [radius];
+	mov.pred 	%p5, 0;
+	setp.leu.f32	%p4, %f5, 0f00000000;
+	@%p4 bra 	BB3_2;
+
+	abs.f32 	%f10, %f5;
+	setp.neu.f32	%p5, %f10, 0f7F800000;
+
+BB3_2:
+	cvta.to.global.u64 	%rd2, %rd3;
+	@%p5 bra 	BB3_4;
+	bra.uni 	BB3_3;
+
+BB3_4:
+	sub.f32 	%f11, %f6, %f5;
+	st.global.f32 	[%rd2], %f11;
+	sub.f32 	%f12, %f7, %f5;
+	st.global.f32 	[%rd2+4], %f12;
+	sub.f32 	%f13, %f8, %f5;
+	st.global.f32 	[%rd2+8], %f13;
+	add.f32 	%f14, %f6, %f5;
+	st.global.f32 	[%rd2+12], %f14;
+	add.f32 	%f15, %f7, %f5;
+	st.global.f32 	[%rd2+16], %f15;
+	add.f32 	%f16, %f8, %f5;
+	st.global.f32 	[%rd2+20], %f16;
+	bra.uni 	BB3_5;
+
+BB3_3:
+	mov.u32 	%r3, 2096152002;
+	st.global.u32 	[%rd2+8], %r3;
+	st.global.u32 	[%rd2+4], %r3;
+	st.global.u32 	[%rd2], %r3;
+	mov.u32 	%r4, -51331646;
+	st.global.u32 	[%rd2+20], %r4;
+	st.global.u32 	[%rd2+16], %r4;
+	st.global.u32 	[%rd2+12], %r4;
+
+BB3_5:
 	ret;
 }
 
@@ -393,7 +441,7 @@ BB2_6:
 )
 {
 	.reg .pred 	%p<7>;
-	.reg .f32 	%f<64>;
+	.reg .f32 	%f<72>;
 	.reg .b32 	%r<20>;
 	.reg .b64 	%rd<40>;
 
@@ -426,82 +474,90 @@ BB4_2:
 	// inline asm
 	call (%rd17), _rt_buffer_get_64, (%rd18, %r4, %r11, %rd1, %rd10, %rd10, %rd10);
 	// inline asm
-	ld.global.f32 	%f15, [ray];
-	ld.v4.f32 	{%f16, %f17, %f18, %f19}, [%rd17];
-	sub.f32 	%f1, %f15, %f16;
-	ld.global.f32 	%f23, [ray+4];
-	sub.f32 	%f2, %f23, %f17;
-	ld.global.f32 	%f24, [ray+8];
-	sub.f32 	%f3, %f24, %f18;
+	ld.global.f32 	%f17, [ray];
+	ld.v4.f32 	{%f18, %f19, %f20, %f21}, [%rd17];
+	sub.f32 	%f1, %f17, %f18;
+	ld.global.f32 	%f25, [ray+4];
+	sub.f32 	%f2, %f25, %f19;
+	ld.global.f32 	%f26, [ray+8];
+	sub.f32 	%f3, %f26, %f20;
 	ld.global.f32 	%f6, [ray+20];
 	ld.global.f32 	%f4, [ray+12];
 	ld.global.f32 	%f5, [ray+16];
-	mul.f32 	%f25, %f2, %f5;
-	fma.rn.f32 	%f26, %f1, %f4, %f25;
-	fma.rn.f32 	%f7, %f3, %f6, %f26;
-	mul.f32 	%f27, %f2, %f2;
-	fma.rn.f32 	%f28, %f1, %f1, %f27;
-	fma.rn.f32 	%f29, %f3, %f3, %f28;
-	add.f32 	%f30, %f29, 0fBF800000;
-	mul.f32 	%f31, %f7, %f7;
-	sub.f32 	%f8, %f31, %f30;
-	setp.leu.f32	%p2, %f8, 0f00000000;
+	mul.f32 	%f27, %f2, %f5;
+	fma.rn.f32 	%f28, %f1, %f4, %f27;
+	fma.rn.f32 	%f7, %f3, %f6, %f28;
+	mul.f32 	%f29, %f2, %f2;
+	fma.rn.f32 	%f30, %f1, %f1, %f29;
+	fma.rn.f32 	%f31, %f3, %f3, %f30;
+	ld.global.f32 	%f8, [radius];
+	mul.f32 	%f9, %f8, %f8;
+	sub.f32 	%f32, %f31, %f9;
+	mul.f32 	%f33, %f7, %f7;
+	sub.f32 	%f10, %f33, %f32;
+	setp.leu.f32	%p2, %f10, 0f00000000;
 	@%p2 bra 	BB4_8;
 
-	sqrt.rn.f32 	%f33, %f8;
-	neg.f32 	%f34, %f7;
-	sub.f32 	%f9, %f34, %f33;
-	abs.f32 	%f35, %f9;
-	mov.f32 	%f63, 0f00000000;
-	setp.leu.f32	%p3, %f35, 0f41200000;
+	sqrt.rn.f32 	%f35, %f10;
+	neg.f32 	%f36, %f7;
+	sub.f32 	%f11, %f36, %f35;
+	abs.f32 	%f37, %f11;
+	mul.f32 	%f38, %f8, 0f41200000;
+	mov.f32 	%f71, 0f00000000;
+	setp.leu.f32	%p3, %f37, %f38;
 	@%p3 bra 	BB4_6;
 
-	ld.global.f32 	%f37, [ray+12];
-	ld.global.f32 	%f38, [ray+16];
-	ld.global.f32 	%f39, [ray+20];
-	fma.rn.f32 	%f40, %f9, %f37, %f1;
-	fma.rn.f32 	%f41, %f9, %f38, %f2;
-	fma.rn.f32 	%f42, %f9, %f39, %f3;
-	mul.f32 	%f43, %f5, %f41;
-	fma.rn.f32 	%f44, %f4, %f40, %f43;
-	fma.rn.f32 	%f10, %f6, %f42, %f44;
-	mul.f32 	%f45, %f41, %f41;
-	fma.rn.f32 	%f46, %f40, %f40, %f45;
-	fma.rn.f32 	%f47, %f42, %f42, %f46;
-	add.f32 	%f48, %f47, 0fBF800000;
-	mul.f32 	%f49, %f10, %f10;
-	sub.f32 	%f11, %f49, %f48;
-	setp.leu.f32	%p4, %f11, 0f00000000;
+	ld.global.f32 	%f40, [ray+12];
+	ld.global.f32 	%f41, [ray+16];
+	ld.global.f32 	%f42, [ray+20];
+	fma.rn.f32 	%f43, %f11, %f40, %f1;
+	fma.rn.f32 	%f44, %f11, %f41, %f2;
+	fma.rn.f32 	%f45, %f11, %f42, %f3;
+	mul.f32 	%f46, %f5, %f44;
+	fma.rn.f32 	%f47, %f4, %f43, %f46;
+	fma.rn.f32 	%f12, %f6, %f45, %f47;
+	mul.f32 	%f48, %f44, %f44;
+	fma.rn.f32 	%f49, %f43, %f43, %f48;
+	fma.rn.f32 	%f50, %f45, %f45, %f49;
+	sub.f32 	%f51, %f50, %f9;
+	mul.f32 	%f52, %f12, %f12;
+	sub.f32 	%f13, %f52, %f51;
+	setp.leu.f32	%p4, %f13, 0f00000000;
 	@%p4 bra 	BB4_6;
 
-	sqrt.rn.f32 	%f50, %f11;
-	neg.f32 	%f51, %f10;
-	sub.f32 	%f63, %f51, %f50;
+	sqrt.rn.f32 	%f53, %f13;
+	neg.f32 	%f54, %f12;
+	sub.f32 	%f71, %f54, %f53;
 
 BB4_6:
-	add.f32 	%f52, %f9, %f63;
+	add.f32 	%f55, %f11, %f71;
 	// inline asm
-	call (%r12), _rt_potential_intersection, (%f52);
+	call (%r12), _rt_potential_intersection, (%f55);
 	// inline asm
 	setp.eq.s32	%p5, %r12, 0;
 	@%p5 bra 	BB4_8;
 
-	fma.rn.f32 	%f53, %f6, %f52, %f3;
-	fma.rn.f32 	%f54, %f5, %f52, %f2;
-	fma.rn.f32 	%f55, %f4, %f52, %f1;
-	st.global.v2.f32 	[geometric_normal], {%f55, %f54};
-	st.global.f32 	[geometric_normal+8], %f53;
-	st.global.v2.f32 	[shading_normal], {%f55, %f54};
-	st.global.f32 	[shading_normal+8], %f53;
+	fma.rn.f32 	%f56, %f4, %f55, %f1;
+	fma.rn.f32 	%f57, %f5, %f55, %f2;
+	fma.rn.f32 	%f58, %f6, %f55, %f3;
+	ld.global.f32 	%f59, [radius];
+	rcp.rn.f32 	%f60, %f59;
+	mul.f32 	%f61, %f58, %f60;
+	mul.f32 	%f62, %f57, %f60;
+	mul.f32 	%f63, %f56, %f60;
+	st.global.v2.f32 	[geometric_normal], {%f63, %f62};
+	st.global.f32 	[geometric_normal+8], %f61;
+	st.global.v2.f32 	[shading_normal], {%f63, %f62};
+	st.global.f32 	[shading_normal+8], %f61;
 	mov.u64 	%rd31, color_buffer;
 	cvta.global.u64 	%rd26, %rd31;
 	mov.u64 	%rd30, 0;
 	// inline asm
 	call (%rd25), _rt_buffer_get_64, (%rd26, %r4, %r11, %rd1, %rd30, %rd30, %rd30);
 	// inline asm
-	ld.v4.f32 	{%f56, %f57, %f58, %f59}, [%rd25];
-	st.global.v2.f32 	[shading_color], {%f56, %f57};
-	st.global.f32 	[shading_color+8], %f58;
+	ld.v4.f32 	{%f64, %f65, %f66, %f67}, [%rd25];
+	st.global.v2.f32 	[shading_color], {%f64, %f65};
+	st.global.f32 	[shading_color+8], %f66;
 	mov.u32 	%r16, 0;
 	// inline asm
 	call (%r15), _rt_report_intersection, (%r16);

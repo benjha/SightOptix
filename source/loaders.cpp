@@ -61,13 +61,13 @@ int loadAscii (const char* filename, std::vector<float> *positions, std::vector<
 				ptr = end;
 			}
 
-			x = strtof(ptr, &end);
+			z = strtof(ptr, &end);
 			ptr = end;
 
 			y = strtof(ptr, &end);
 			ptr = end;
 
-			z = strtof(ptr, &end);
+			x = strtof(ptr, &end);
 			ptr = end;
 
 			energy = strtof(ptr, &end);

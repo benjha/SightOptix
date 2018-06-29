@@ -30,7 +30,10 @@
 
 //#define	COLOR_LOOK_UP
 
-#define RADIUS			1.0f
+// How to compile cu files for optix
+
+//  /usr/local/cuda-8.0/bin/nvcc -I../frameserver/header -I../frameserver/communications -I../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include -O3 -std=c++11 -gencode arch=compute_35,code=sm_35 -ptx -m64 particles.cu
+
 
 using namespace optix;
 
@@ -40,10 +43,12 @@ rtBuffer<float4>	particle_buffer;
 	rtBuffer<float4>	color_buffer;
 #endif
 
+rtDeclareVariable(float, radius, , );
 //rtDeclareVariable(float4,  sphere, , );
 rtDeclareVariable(float3, geometric_normal, attribute geometric_normal, ); 
 rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
 rtDeclareVariable(float3, shading_color, attribute shading_color, );
+
 
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 
@@ -77,7 +82,7 @@ void intersect_sphere(int primIdx)
 {
 	const float4	lookUp 	 = particle_buffer[primIdx];
 	const float3	center 	 = make_float3 (lookUp);
-	const float		radius 	 = RADIUS;
+
 #ifdef COLOR_LOOK_UP
 	float 			colorIdx = lookUp.w;
 #endif
@@ -213,14 +218,14 @@ RT_PROGRAM void bounds (int primIdx, float result[6])
 //	const int 		idx		= index_buffer[primIdx];
 	const float4	lookUp 	= particle_buffer[primIdx];
 	const float3	center 	= make_float3 (lookUp);
-	const float3	radius 	= make_float3 (RADIUS);
+	const float3	vRadius 	= make_float3 (radius);
 
 	optix::Aabb* aabb = (optix::Aabb*)result;
 
-	if ( radius.x > 0.0f && !isinf(radius.x))
+	if ( vRadius.x > 0.0f && !isinf(vRadius.x))
 	{
-	    aabb->m_min = center - radius;
-	    aabb->m_max = center + radius;
+	    aabb->m_min = center - vRadius;
+	    aabb->m_max = center + vRadius;
 	}
 	else
 	{

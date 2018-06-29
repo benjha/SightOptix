@@ -132,6 +132,7 @@ void setHandlers()
 	wsserver->setKeyboardHandler	(keyboardHandler);
 	wsserver->setMessageHandler		(msgHandler);
 	renderer->setMouseHandler 		(mouseHandler);
+	renderer->setKeyboardHandler	(keyboardHandler);
 }
 //
 //=======================================================================================

@@ -112,10 +112,10 @@
 								<option id="nvcc.compiler.include.paths.1036432132" name="Include paths (-I)" superClass="nvcc.compiler.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../frameserver/header"/>
 									<listOptionValue builtIn="false" value="../frameserver/communications"/>
-									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-4.0.2-linux64/include"/>
+									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include"/>
 								</option>
 								<option id="nvcc.compiler.cpp11option.141359521" name="Enable C++11 support (-std=c++11)" superClass="nvcc.compiler.cpp11option" value="true" valueType="boolean"/>
-								<option id="nvcc.compiler.compileroptions.464746675" name="Preprocessor options (-Xcompiler)" superClass="nvcc.compiler.compileroptions" valueType="stringList"/>
+								<option id="nvcc.compiler.compileroptions.464746675" name="Preprocessor options (-Xcompiler)" superClass="nvcc.compiler.compileroptions"/>
 								<inputType id="nvcc.compiler.input.cu.234250818" superClass="nvcc.compiler.input.cu"/>
 								<inputType id="nvcc.compiler.input.cpp.1024228137" superClass="nvcc.compiler.input.cpp"/>
 								<inputType id="nvcc.compiler.input.c.630461394" superClass="nvcc.compiler.input.c"/>
@@ -123,12 +123,15 @@
 							<tool id="nvcc.linker.base.1752944311" name="NVCC Linker" superClass="nvcc.linker.base">
 								<option id="nvcc.linker.option.libs.157331948" name="Libraries (-l)" superClass="nvcc.linker.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="optix"/>
+									<listOptionValue builtIn="false" value="optix_denoiser"/>
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="turbojpeg"/>
+									<listOptionValue builtIn="false" value="cudnn"/>
+									<listOptionValue builtIn="false" value="cudart"/>
 								</option>
 								<option id="nvcc.linker.option.paths.2054771683" name="Library search path (-L)" superClass="nvcc.linker.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-4.0.2-linux64/lib64"/>
+									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/lib64"/>
 								</option>
 								<option defaultValue="true" id="nvcc.linker.option.shared.1106574983" name="Shared (-shared)" superClass="nvcc.linker.option.shared" value="false" valueType="boolean"/>
 								<inputType id="nvcc.linker.input.1491190605" superClass="nvcc.linker.input">
@@ -184,4 +187,5 @@
 			<resource resourceType="PROJECT" workspacePath="/optixParticles"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

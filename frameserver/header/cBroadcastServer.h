@@ -83,6 +83,7 @@ public:
 
 private:
 
+
     void	parse 					( int type, std::stringstream *value 	);
     void	scale 					( unsigned char *in, unsigned char *out, float factor );
     bool				needMoreFrames, stop, saveFrame;
@@ -97,6 +98,7 @@ private:
 
     // PNG Encoder
 	cPNGEncoder								*pngEncoder;
+
 
 
 #ifdef JPEG_ENCODING
