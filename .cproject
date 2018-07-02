@@ -101,27 +101,26 @@
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="com.nvidia.cuda.ide.eight_zero.configuration.release.1455281634" name="Release" parent="com.nvidia.cuda.ide.eight_zero.configuration.release">
 					<folderInfo id="com.nvidia.cuda.ide.eight_zero.configuration.release.1455281634." name="/" resourcePath="">
-						<toolChain id="com.nvidia.cuda.ide.toolchain.eight_zero.exe.release.1360605323" name="CUDA Toolkit 8.0" superClass="com.nvidia.cuda.ide.toolchain.eight_zero.exe.release">
-							<targetPlatform archList="all" binaryParser="com.nvidia.cuda.ide.elf;com.nvidia.cuda.ide.macho;com.nvidia.cuda.ide.cubin" id="com.nvidia.cuda.ide.targetPlatform.1437181426" isAbstract="false" name="Debug Platform" osList="linux,macosx" superClass="com.nvidia.cuda.ide.targetPlatform"/>
-							<builder buildPath="${workspace_loc:/optixParticles}/Release" id="com.nvidia.cuda.ide.builder.271161529" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CUDA Toolkit 8.0 Builder" superClass="com.nvidia.cuda.ide.builder"/>
-							<tool command="nvcc" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX} ${OUTPUT} ${INPUTS}" id="nvcc.compiler.base.651240522" name="NVCC Compiler" superClass="nvcc.compiler.base">
-								<option id="nvcc.compiler.deviceDebug.1516876050" name="Generate device debug information (-G)" superClass="nvcc.compiler.deviceDebug"/>
-								<option id="nvcc.compiler.option.level.2027410184" name="Generate host debug information (-g)" superClass="nvcc.compiler.option.level"/>
-								<option defaultValue="nvcc.compiler.optimization.level.most" id="nvcc.compiler.optimization.level.1768881359" name="Optimization Level" superClass="nvcc.compiler.optimization.level" valueType="enumerated"/>
-								<option id="nvcc.compiler.pic.1107323273" name="Position Independent Code (-fPIC)" superClass="nvcc.compiler.pic"/>
-								<option id="nvcc.compiler.include.paths.1036432132" name="Include paths (-I)" superClass="nvcc.compiler.include.paths" valueType="includePath">
+						<toolChain id="com.nvidia.cuda.ide.toolchain.eight_zero.164954966" name="CUDA Toolkit 8.0" superClass="com.nvidia.cuda.ide.toolchain.eight_zero">
+							<targetPlatform archList="all" binaryParser="com.nvidia.cuda.ide.elf;com.nvidia.cuda.ide.macho;com.nvidia.cuda.ide.cubin" id="com.nvidia.cuda.ide.targetPlatform.1298123605" isAbstract="false" name="Debug Platform" osList="linux,macosx" superClass="com.nvidia.cuda.ide.targetPlatform"/>
+							<builder buildPath="${workspace_loc:/SightOptix}/Release" id="com.nvidia.cuda.ide.builder.1456785257" keepEnvironmentInBuildfile="false" name="CUDA Toolkit 8.0 Builder" superClass="com.nvidia.cuda.ide.builder"/>
+							<tool id="nvcc.compiler.base.710277980" name="NVCC Compiler" superClass="nvcc.compiler.base">
+								<option id="nvcc.compiler.include.paths.735419638" name="Include paths (-I)" superClass="nvcc.compiler.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../frameserver/header"/>
 									<listOptionValue builtIn="false" value="../frameserver/communications"/>
 									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include"/>
 								</option>
-								<option id="nvcc.compiler.cpp11option.141359521" name="Enable C++11 support (-std=c++11)" superClass="nvcc.compiler.cpp11option" value="true" valueType="boolean"/>
-								<option id="nvcc.compiler.compileroptions.464746675" name="Preprocessor options (-Xcompiler)" superClass="nvcc.compiler.compileroptions"/>
-								<inputType id="nvcc.compiler.input.cu.234250818" superClass="nvcc.compiler.input.cu"/>
-								<inputType id="nvcc.compiler.input.cpp.1024228137" superClass="nvcc.compiler.input.cpp"/>
-								<inputType id="nvcc.compiler.input.c.630461394" superClass="nvcc.compiler.input.c"/>
+								<option id="nvcc.compiler.deviceDebug.854797278" name="Generate device debug information (-G)" superClass="nvcc.compiler.deviceDebug"/>
+								<option id="nvcc.compiler.option.level.1611636768" name="Generate host debug information (-g)" superClass="nvcc.compiler.option.level"/>
+								<option defaultValue="nvcc.compiler.optimization.level.most" id="nvcc.compiler.optimization.level.1539268258" name="Optimization Level" superClass="nvcc.compiler.optimization.level" valueType="enumerated"/>
+								<option id="nvcc.compiler.pic.1609516419" name="Position Independent Code (-fPIC)" superClass="nvcc.compiler.pic"/>
+								<option id="nvcc.compiler.cpp11option.1079530884" name="Enable C++11 support (-std=c++11)" superClass="nvcc.compiler.cpp11option" value="true" valueType="boolean"/>
+								<inputType id="nvcc.compiler.input.cu.95386697" superClass="nvcc.compiler.input.cu"/>
+								<inputType id="nvcc.compiler.input.cpp.1153639887" superClass="nvcc.compiler.input.cpp"/>
+								<inputType id="nvcc.compiler.input.c.576765042" superClass="nvcc.compiler.input.c"/>
 							</tool>
-							<tool id="nvcc.linker.base.1752944311" name="NVCC Linker" superClass="nvcc.linker.base">
-								<option id="nvcc.linker.option.libs.157331948" name="Libraries (-l)" superClass="nvcc.linker.option.libs" valueType="libs">
+							<tool id="nvcc.linker.base.1736501597" name="NVCC Linker" superClass="nvcc.linker.base">
+								<option id="nvcc.linker.option.libs.92417275" name="Libraries (-l)" superClass="nvcc.linker.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="optix"/>
 									<listOptionValue builtIn="false" value="optix_denoiser"/>
 									<listOptionValue builtIn="false" value="png"/>
@@ -130,19 +129,17 @@
 									<listOptionValue builtIn="false" value="cudnn"/>
 									<listOptionValue builtIn="false" value="cudart"/>
 								</option>
-								<option id="nvcc.linker.option.paths.2054771683" name="Library search path (-L)" superClass="nvcc.linker.option.paths" valueType="libPaths">
+								<option id="nvcc.linker.option.paths.133403958" name="Library search path (-L)" superClass="nvcc.linker.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/lib64"/>
 								</option>
-								<option defaultValue="true" id="nvcc.linker.option.shared.1106574983" name="Shared (-shared)" superClass="nvcc.linker.option.shared" value="false" valueType="boolean"/>
-								<inputType id="nvcc.linker.input.1491190605" superClass="nvcc.linker.input">
+								<inputType id="nvcc.linker.input.897853144" superClass="nvcc.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
-								<outputType id="nvcc.linker.output.so.1621056137" outputPrefix="" superClass="nvcc.linker.output.so"/>
 							</tool>
-							<tool id="nvcc.archiver.base.1641341393" name="NVCC Archiver" superClass="nvcc.archiver.base"/>
-							<tool id="com.nvidia.host.assembler.667855666" name="Host Assembler" superClass="com.nvidia.host.assembler">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1523037909" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="nvcc.archiver.base.654880227" name="NVCC Archiver" superClass="nvcc.archiver.base"/>
+							<tool id="com.nvidia.host.assembler.1169346697" name="Host Assembler" superClass="com.nvidia.host.assembler">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1255672615" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -152,7 +149,7 @@
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="com.nvidia.cuda.ide.build.project.ICudaProjectConfiguration">
-				<executable devicelink="true">
+				<executable devicelink="false">
 					<sass major="3" minor="5"/>
 					<sass major="6" minor="0"/>
 					<ptx major="3" minor="5"/>

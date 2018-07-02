@@ -518,8 +518,8 @@ void cOptixParticlesRenderer::createMaterial(	)
     m_context["occlusion_distance"]->setFloat(100.0f);
     m_context["sqrt_occlusion_samples"]->setInt(4);
 
-    Program transparent_ch = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "closest_hit_radiance" );
-    Program transparent_ah = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "any_hit_shadow" );
+//    Program transparent_ch = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "closest_hit_radiance" );
+//    Program transparent_ah = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "any_hit_shadow" );
 }
 //
 //=======================================================================================
@@ -625,7 +625,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 	//Max = {987.647, 987.656, 1059.79 }
 	//Min = {-0.246244, -0.241258, -2343.57 }
 	//Max = {987.647, 987.656, 1059.79 }
-
+/*
 	Aabb aabb;
 	aabb.set(make_float3 (-0.246244, -0.241258, -2343.57), make_float3(987.647, 987.656, 1059.79));
 	m_cube[0] = m_context->createGeometry();
@@ -649,7 +649,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 	m_cube[0]["v1"]->setFloat( v1 );
 	m_cube[0]["v2"]->setFloat( v2 );
 	m_cube[0]["anchor"]->setFloat( anchor );
-
+*/
 
 }
 //

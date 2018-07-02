@@ -8,6 +8,7 @@
 
 #include <string>
 #include <png.h>
+#include <stdlib.h>
 
 class cPNGEncoder
 {
