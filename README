@@ -3,8 +3,8 @@
 
 - TurboJPEG Library
 - LibPNG
-- CUDA 8
-- Optix 4.0.2
+- CUDA 9
+- Optix 5.0.1
 
 *Compilation
 
