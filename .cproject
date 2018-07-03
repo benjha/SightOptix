@@ -30,7 +30,7 @@
 								<option id="nvcc.compiler.include.paths.1885573026" name="Include paths (-I)" superClass="nvcc.compiler.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../frameserver/header"/>
 									<listOptionValue builtIn="false" value="../frameserver/communications"/>
-									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-4.0.2-linux64/include"/>
+									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include"/>
 								</option>
 								<option id="nvcc.compiler.cpp11option.2103686237" name="Enable C++11 support (-std=c++11)" superClass="nvcc.compiler.cpp11option" value="true" valueType="boolean"/>
 								<option id="nvcc.compiler.compileroptions.1341191581" name="Preprocessor options (-Xcompiler)" superClass="nvcc.compiler.compileroptions" valueType="stringList">
@@ -43,13 +43,17 @@
 							<tool id="nvcc.linker.base.1624231311" name="NVCC Linker" superClass="nvcc.linker.base">
 								<option id="nvcc.linker.option.libs.137275745" name="Libraries (-l)" superClass="nvcc.linker.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="optix"/>
+									<listOptionValue builtIn="false" value="optix_denoiser"/>
 									<listOptionValue builtIn="false" value="png"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="turbojpeg"/>
+									<listOptionValue builtIn="false" value="cudnn"/>
+									<listOptionValue builtIn="false" value="cudart"/>
 								</option>
 								<option id="nvcc.linker.option.paths.1757177527" name="Library search path (-L)" superClass="nvcc.linker.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-4.0.2-linux64/lib64"/>
+									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/lib64"/>
 								</option>
+								<option id="nvcc.linker.option.cudart.794700255" name="CUDA Runtime Library:" superClass="nvcc.linker.option.cudart" value="nvcc.linker.option.cudart.shared" valueType="enumerated"/>
 								<inputType id="nvcc.linker.input.964407292" superClass="nvcc.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -108,7 +112,7 @@
 								<option id="nvcc.compiler.include.paths.735419638" name="Include paths (-I)" superClass="nvcc.compiler.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../frameserver/header"/>
 									<listOptionValue builtIn="false" value="../frameserver/communications"/>
-									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include"/>
+									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include"/>
 								</option>
 								<option id="nvcc.compiler.deviceDebug.854797278" name="Generate device debug information (-G)" superClass="nvcc.compiler.deviceDebug"/>
 								<option id="nvcc.compiler.option.level.1611636768" name="Generate host debug information (-g)" superClass="nvcc.compiler.option.level"/>
@@ -130,8 +134,9 @@
 									<listOptionValue builtIn="false" value="cudart"/>
 								</option>
 								<option id="nvcc.linker.option.paths.133403958" name="Library search path (-L)" superClass="nvcc.linker.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/lib64"/>
+									<listOptionValue builtIn="false" value="../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/lib64"/>
 								</option>
+								<option id="nvcc.linker.option.cudart.241079672" superClass="nvcc.linker.option.cudart" value="nvcc.linker.option.cudart.shared" valueType="enumerated"/>
 								<inputType id="nvcc.linker.input.897853144" superClass="nvcc.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

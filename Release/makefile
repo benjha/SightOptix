@@ -60,7 +60,7 @@ all: SightOptix
 SightOptix: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: NVCC Linker'
-	/usr/local/cuda-8.0/bin/nvcc --cudart static -L../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/lib64 --relocatable-device-code=false -gencode arch=compute_35,code=compute_35 -gencode arch=compute_60,code=compute_60 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -link -o  "SightOptix" $(OBJS) $(USER_OBJS) $(LIBS)
+	/usr/local/cuda-8.0/bin/nvcc --cudart shared -L../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/lib64 --relocatable-device-code=false -gencode arch=compute_35,code=compute_35 -gencode arch=compute_60,code=compute_60 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60 -link -o  "SightOptix" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
