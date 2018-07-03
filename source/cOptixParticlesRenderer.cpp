@@ -578,7 +578,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 		//particles->setIntersectionProgram( m_context->createProgramFromPTXFile( "shaders/particles.ptx", "sphere_array_intersect" ) );
 		m_sphere[k]["particle_buffer"]->setBuffer ( posBuffer );
 		m_sphere[k]["color_buffer"]->setBuffer (colorBuffer);
-		m_sphere[k]["radius"]->setFloat(4.0f);
+		m_sphere[k]["radius"]->setFloat(2.0f);
 	}
 
 	// loading the remaining particles
