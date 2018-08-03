@@ -19,8 +19,12 @@
 #include <cuda_profiler_api.h>
 
 //#define STREAM_PROGRESSIVE
+/*
+ * shareBuffer = true if Optix Buffer will be shared with CUDA
+ * for example, when using GPU encoding
+ */
 
-cOptixParticlesRenderer::cOptixParticlesRenderer( )
+cOptixParticlesRenderer::cOptixParticlesRenderer(bool shareBuffer=false)
 {
 	m_width 	= 1280;
 	m_height 	= 720;
@@ -34,12 +38,14 @@ cOptixParticlesRenderer::cOptixParticlesRenderer( )
 	m_lookAt	= (float3){0.0f, 0.0f, 0.0f };
 	m_up		= (float3){ 0.0f, 1.0f, 0.0f };
     m_rotate  	= Matrix4x4::identity();
+    m_shareBuffer	= shareBuffer;
 
     m_pngEncoder 		= 0;
 	m_autosave			= false;
 	m_renderPassCounter	= 0;
 	m_numRenderSteps	= 10;
 	m_denoiserEnabled	= false;
+	m_bufferPtr			= 0;
 }
 
 cOptixParticlesRenderer::~cOptixParticlesRenderer ( )
@@ -277,21 +283,28 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 		//m_context["sqrt_diffuse_samples"]->setInt( 3 );
 	  //  m_context["sqrt_occlusion_samples"]->setInt(3);
 	//}
-
+#ifdef POST_PROCESSING
 	if (!m_denoiserEnabled)
+#endif
 	{
-		m_context->launch( 0, m_width, m_height);
-		sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
+		m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
+		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
+		//sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
 	}
+#ifdef POST_PROCESSING
+
 	if (m_denoiserEnabled && m_denoise)
 	{
 		m_clDenoiser->execute();
-		sutil::displayBuffer(pixels, m_denoisedBuffer->get());
+		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
+
+		//sutil::displayBuffer(pixels, m_denoisedBuffer->get());
 		// check albedo:
 		//sutil::displayBuffer(pixels, m_context["albedo_buffer"]->getBuffer()->get());
 		// check normals:
 		//sutil::displayBuffer(pixels, m_context["normal_buffer"]->getBuffer()->get());
 	}
+#endif
 
 
 	m_context["frame"]->setUint( m_frameAccum++ );
@@ -330,8 +343,9 @@ void cOptixParticlesRenderer::createContext ( 	)
 {
 	// Set up context
 	m_context = Context::create();
+	m_context->setEntryPointCount( 2 );
 	m_context->setRayTypeCount( 2 );
-	m_context->setEntryPointCount( 1 );
+	std::vector<int> devices = m_context->getEnabledDevices();
 
 
 #ifndef POST_PROCESSING
@@ -366,16 +380,29 @@ void cOptixParticlesRenderer::createContext ( 	)
 
 #endif
 
+    //
+    Buffer bufferToStream =  m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_UNSIGNED_BYTE4, m_width, m_height );
+    m_context["bufferToEncode"]->set( bufferToStream );
+
+
 	std::string ptx_path( "shaders/shaders.ptx" );
 
 	// Ray generation program
 	Program ray_gen_program = m_context->createProgramFromPTXFile( ptx_path, "pinhole_camera" );
-	m_context->setRayGenerationProgram( 0, ray_gen_program );
+	m_context->setRayGenerationProgram( ENTRY_POINT_MAIN_SHADING, ray_gen_program );
 
 	// Exception program
 	Program exception_program = m_context->createProgramFromPTXFile( ptx_path, "exception" );
-	m_context->setExceptionProgram( 0, exception_program );
+	m_context->setExceptionProgram( ENTRY_POINT_MAIN_SHADING, exception_program );
 	m_context["bad_color"]->setFloat( 1.0f, 0.0f, 1.0f, 0.0f );
+
+	// Float4 to color Program is needed to support GPU encoding
+	Program float4TOcolor = m_context->createProgramFromPTXFile( ptx_path, "float4TOcolor" );
+	m_context->setRayGenerationProgram( ENTRY_POINT_FLOAT4_TO_COLOR, float4TOcolor );
+
+	Program exception_program2 = m_context->createProgramFromPTXFile( ptx_path, "exception" );
+	m_context->setExceptionProgram( ENTRY_POINT_FLOAT4_TO_COLOR, exception_program2 );
+
 
 	// Miss program
 	m_context->setMissProgram( 0, m_context->createProgramFromPTXFile( ptx_path, "miss" ) );
@@ -406,6 +433,10 @@ void cOptixParticlesRenderer::createContext ( 	)
 	seed->unmap();
 	m_context["rnd_seeds"]->setBuffer(seed);
 
+	if (m_shareBuffer)
+	{
+		m_bufferPtr = bufferToStream->getDevicePointer(0);
+	}
 }
 //
 //=======================================================================================

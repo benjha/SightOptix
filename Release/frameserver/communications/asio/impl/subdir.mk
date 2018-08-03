@@ -17,8 +17,8 @@ CPP_DEPS += \
 frameserver/communications/asio/impl/%.o: ../frameserver/communications/asio/impl/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Compiler'
-	/usr/local/cuda-8.0/bin/nvcc -I../frameserver/header -I../frameserver/communications -I../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include -O3 -std=c++11 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60  -odir "frameserver/communications/asio/impl" -M -o "$(@:%.o=%.d)" "$<"
-	/usr/local/cuda-8.0/bin/nvcc -I../frameserver/header -I../frameserver/communications -I../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include -O3 -std=c++11 --compile  -x c++ -o  "$@" "$<"
+	/usr/local/cuda-8.0/bin/nvcc -I../frameserver/header -I../frameserver/communications -I../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include -I../../../Programs/include -O3 -std=c++11 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_60,code=sm_60  -odir "frameserver/communications/asio/impl" -M -o "$(@:%.o=%.d)" "$<"
+	/usr/local/cuda-8.0/bin/nvcc -I../frameserver/header -I../frameserver/communications -I../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include -I../../../Programs/include -O3 -std=c++11 --compile  -x c++ -o  "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

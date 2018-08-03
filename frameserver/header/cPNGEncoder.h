@@ -8,7 +8,6 @@
 
 #include <string>
 #include <png.h>
-#include <stdlib.h>
 
 class cPNGEncoder
 {
@@ -22,7 +21,7 @@ public:
 
 			~cPNGEncoder ()
 			{
-				png_destroy_write_struct(&m_writeStruct, &m_writeStructInfo);
+
 			};
 
 			bool initEncoder ()
@@ -109,6 +108,8 @@ public:
 
 				free (rows);
 				fclose(fp);
+
+				return true;
 			}
 
 

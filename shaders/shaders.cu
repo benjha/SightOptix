@@ -76,9 +76,11 @@ rtDeclareVariable(unsigned int,	 frame, , );
 rtDeclareVariable(float,         jitter_factor, ,) = 0.0f;
 
 rtBuffer<float4, 2>              output_buffer;
+rtBuffer<uchar4, 2>				 bufferToEncode;
+rtBuffer<float4, 2>              accum_buffer;
 rtBuffer<float4, 2>              albedo_buffer;
 rtBuffer<float4, 2>              normal_buffer;
-rtBuffer<float4, 2>              accum_buffer;
+
 
 
 //#define TIME_VIEW
@@ -119,14 +121,16 @@ RT_PROGRAM void pinhole_camera()
 	float4 acc_val = accum_buffer[launch_index];
 	if( frame > 1 ){
 		acc_val = lerp( acc_val, make_float4( prd.result, 0.f), 1.0f / static_cast<float>( frame+1 ) );
+
 	}
 	else
 		acc_val = make_float4(prd.result, 0.f);
+
 	output_buffer[launch_index] = acc_val;
 	accum_buffer[launch_index] = acc_val;
 	albedo_buffer[launch_index] = make_float4(prd.albedo, 1.0f);
 	normal_buffer[launch_index] = make_float4(prd.normal,1.0f);
-	//output_buffer[launch_index] = make_float4( prd.result );
+
 #endif
 }
 
@@ -149,6 +153,10 @@ RT_PROGRAM void miss()
 	}
 }
 
+RT_PROGRAM void float4TOcolor ()
+{
+	bufferToEncode[launch_index] = make_color (make_float3(output_buffer[launch_index]));
+}
 
 // AO
 //=======================================================================================

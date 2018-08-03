@@ -284,6 +284,7 @@ void sutil::displayStreamBuffer( unsigned char *pix, RTbuffer buffer, unsigned i
 	    // Now unmap the buffer
 	    RT_CHECK_ERROR( rtBufferUnmap(buffer) );
 }
+
 void sutil::displayBuffer( unsigned char *pix, RTbuffer buffer)
 {
     unsigned int width, height;
@@ -376,7 +377,6 @@ void sutil::displayBuffer( unsigned char *pix, RTbuffer buffer)
     RT_CHECK_ERROR( rtBufferUnmap(buffer) );
 
 }
-
 
 namespace
 {

@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -loptix -loptix_denoiser -lpng -lpthread -lturbojpeg -lcudnn -lcudart
+LIBS := -loptix -lNvPipe -loptix_denoiser -lpng -lpthread -lturbojpeg -lcudnn -lcudart
 

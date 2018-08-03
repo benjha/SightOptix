@@ -6,8 +6,6 @@
 #ifndef		__OPTIX_PARTICLES_RENDERER_H__
 #define 	__OPTIX_PARTICLES_RENDERER_H__
 
-#define POST_PROCESSING
-
 #include <iostream>
 #include <cstdlib>
 #include <vector>
@@ -17,6 +15,7 @@
 #include "../header/Arcball.h"
 
 
+#define POST_PROCESSING
 
 class cPNGEncoder;
 
@@ -32,7 +31,12 @@ class cKeyboardHandler;
 class cOptixParticlesRenderer
 {
 public:
-						cOptixParticlesRenderer		( 	);
+	enum
+	{
+		ENTRY_POINT_MAIN_SHADING=0,
+		ENTRY_POINT_FLOAT4_TO_COLOR
+	};
+						cOptixParticlesRenderer		( bool shareBuffer	);
 						~cOptixParticlesRenderer	(	);
 
 	void				init						( int width, int height,
@@ -42,6 +46,7 @@ public:
 	void				setMouseHandler				( cMouseHandler *mouseH );
 	void				setKeyboardHandler 			( cKeyboardHandler *keyHandler );
 	unsigned char*		getPixels					(	);
+	void*				getGPUFrameBufferPtr		( 	) { return m_bufferPtr; };
 
 private:
 	void				updateView					(	);
@@ -61,10 +66,12 @@ private:
 	int					m_ao_sample_mult;
 	unsigned int		m_frameAccum, m_numGroups, m_numPartPerGroup;
 	float				m_hfov, m_ratio;
+	bool				m_shareBuffer; // controls if Buffer will be shared with cuda
+	void*				m_bufferPtr; // Buffer pointer for CUDA
 	Context 			m_context;
 	Material			m_material;
 	Material			m_materialTransparent;
-	Geometry			*m_sphere;
+	Geometry*			m_sphere;
 	Geometry			m_cube[4];
 	cMouseHandler*		m_mouseH;
 	cKeyboardHandler*	m_keyboardHandler;

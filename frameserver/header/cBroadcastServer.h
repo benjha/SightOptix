@@ -17,7 +17,8 @@
 #include <functional>
 
 //#define REMOTE
-#define	FULLHD
+#define REMOTE_GPU_ENCODING
+//#define	FULLHD
 //#define EVEREST
 
 
@@ -28,9 +29,17 @@
 	#define IMAGE_HEIGHT	1080
 #endif
 
+#ifdef REMOTE_GPU_ENCODING
+	#define	NVPIPE_ENCODING
+	#define MBPS				32
+	#define TARGET_FPS			30
+	#define	IMAGE_WIDTH			1920
+	#define IMAGE_HEIGHT		1088
+#endif
+
 #ifdef REMOTE
 	#define JPEG_ENCODING
-//	#define CHANGE_RESOLUTION
+	//#define CHANGE_RESOLUTION
 	#define	RESOLUTION_FACTOR	1.0f
 	#define	IMAGE_WIDTH			1920
 	#define IMAGE_HEIGHT		1080
@@ -60,6 +69,10 @@ class cMessageHandler;
 	class cTurboJpegEncoder;
 #endif
 
+#ifdef NVPIPE_ENCODING
+	class cNvPipeEncoderWrapper;
+#endif
+
 class cPNGEncoder;
 
 class broadcast_server {
@@ -74,6 +87,9 @@ public:
     void 	run							( uint16_t 				port							);
     void 	sendFrame 					( float 				*img							);
     void 	sendFrame 					( unsigned char			*img							);
+#ifdef NVPIPE_ENCODING
+    void	sendFrame					( unsigned char *img, void *gpuFrameBufferPtr  );
+#endif
     void 	setFrame 					( float 				*img							);
     void 	setMouseHandler				( cMouseHandler			*mouseH							);
     void 	setKeyboardHandler			( cKeyboardHandler		*keyboardH						);
@@ -83,9 +99,11 @@ public:
 
 private:
 
-
     void	parse 					( int type, std::stringstream *value 	);
     void	scale 					( unsigned char *in, unsigned char *out, float factor );
+    void	sendJPEGFrame 			( unsigned char *rgb ); // img must be RGB 8 bits per channel
+    void	sendNvPipeFrame 		( unsigned char *rgba ); // img must be RGBA 8 bits per channel
+    void	sendNvPipeFrame 		(void *rgbaDevice ); //
     bool				needMoreFrames, stop, saveFrame;
     typedef	std::set<connection_hdl,std::owner_less<connection_hdl>> con_list;
     server 				m_server;
@@ -99,13 +117,16 @@ private:
     // PNG Encoder
 	cPNGEncoder								*pngEncoder;
 
-
+#ifdef NVPIPE_ENCODING
+	cNvPipeEncoderWrapper					*m_nvpipe;
+	bool									m_clientClosed;
+#endif
 
 #ifdef JPEG_ENCODING
-    // Adjust quality of the JPEG accoring to the
+    // Adjust quality of the JPEG according to the
     // image transport throughput
     void adjustJpegQuality			( 	);
-	// JPEG encoder
+	// JPEG m_encoder
 	cTurboJpegEncoder						*jpegEncoder;
 	// JPEG encoding quality
 	unsigned int							jpegQuality;

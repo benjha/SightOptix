@@ -2,7 +2,6 @@
  * Distributed under the OSI-approved Apache License, Version 2.0.  See
  * accompanying file Copyright.txt for details.
  */
-
 #ifndef CMESSAGE_H_
 #define CMESSAGE_H_
 

@@ -35,7 +35,11 @@ cMouseHandler 			*mouseHandler 	= 0;
 cKeyboardHandler 		*keyboardHandler= 0;
 cMessageHandler 		*msgHandler 	= 0;
 cOptixParticlesRenderer *renderer	= 0;
+#ifdef NVPIPE_ENCODING
+unsigned char			pixels[IMAGE_WIDTH*IMAGE_HEIGHT*4];
+#else
 unsigned char			pixels[IMAGE_WIDTH*IMAGE_HEIGHT*3];
+#endif
 
 void display ()
 {
@@ -46,7 +50,9 @@ void display ()
 	{
 		try
 		{
-			wsserver->sendFrame(pixels);
+			// Use the next line only when using GPU encoding
+			wsserver->sendFrame(pixels, renderer->getGPUFrameBufferPtr());
+			//wsserver->sendFrame(pixels);
 		}
 		catch ( Exception& e )
 		{
@@ -114,7 +120,7 @@ void init (int argc, char** argv)
 		std::cout << filename << " file not found. " << std::endl;
 		exit (0);
 	}
-	renderer = new cOptixParticlesRenderer ();
+	renderer = new cOptixParticlesRenderer (true);
 	renderer->init( IMAGE_WIDTH, IMAGE_HEIGHT, &vPos, min, max );
 
 	mouseHandler 	= new cMouseHandler();
