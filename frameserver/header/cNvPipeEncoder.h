@@ -6,10 +6,6 @@
 #define CNVPIPEENCODER_H_
 
 #include "NvPipe.h"
-extern "C" {
-	#include "libavformat/avformat.h"
-	#include "libavutil/mathematics.h"
-}
 /*
  *
  * h264 and hENVC GPU encoding in a MP4 wrapper
