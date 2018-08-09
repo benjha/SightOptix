@@ -427,6 +427,15 @@ void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 //
 void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 {
+	int i = 0;
+	unsigned char c[1920*1088*4];
+	for (i=0;i<1920*1088*4;i+=4)
+	{
+		c[i] = 255;
+		c[i+1] = 0;
+		c[i+2] = 0;
+		c[i+3] = 255;
+	}
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgbaDevice))
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";
@@ -476,7 +485,7 @@ void broadcast_server::sendFrame(unsigned char *img, void *gpuFrameBufferPtr)
 	}
 	if (gpuFrameBufferPtr)
 	{
-		sendNvPipeFrame (gpuFrameBufferPtr);
+		sendNvPipeFrame (img);
 	}
 	else
 	{
