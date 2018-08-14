@@ -45,7 +45,7 @@ public:
 	void				display						( unsigned char *pixels	);
 	void				setMouseHandler				( cMouseHandler *mouseH );
 	void				setKeyboardHandler 			( cKeyboardHandler *keyHandler );
-	unsigned char*		getPixels					(	);
+	void				getPixels					( unsigned char *img	);
 	void*				getGPUFrameBufferPtr		( 	) { return m_bufferPtr; };
 
 private:

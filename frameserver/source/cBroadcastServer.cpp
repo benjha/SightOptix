@@ -47,7 +47,7 @@ broadcast_server::broadcast_server() {
 			bind(&broadcast_server::on_message, this, ::_1, ::_2));
 
 	needMoreFrames 	= false;
-	saveFrame		= false;
+	m_saveFrame		= false;
 	stop 			= true;
 
 	mouseHandler = 0;
@@ -176,7 +176,7 @@ void broadcast_server::on_message(connection_hdl hdl, server::message_ptr msg) {
 			}
 			if (val.str().compare("SAVE ") == 0)
 			{
-				saveFrame = true;
+				m_saveFrame = true;
 			}
 			if (val.str().compare("END  ") == 0)
 			{
@@ -349,7 +349,7 @@ void broadcast_server::sendFrame(unsigned char *img)
 	scale ( img, halfImg, RESOLUTION_FACTOR );
 #endif
 
-	if (saveFrame)
+	if (m_saveFrame)
 	{
 		char date[128];
 		time_t rawtime;
@@ -361,7 +361,7 @@ void broadcast_server::sendFrame(unsigned char *img)
 		filename << "Sight_" << date << ".png";
 		pngEncoder->savePNG(filename.str(), img);
 		std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
-		saveFrame = false;
+		m_saveFrame = false;
 	}
 
 #ifdef JPEG_ENCODING
@@ -460,7 +460,7 @@ void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 //
 //=======================================================================================
 //
-void broadcast_server::sendFrame(unsigned char *img, void *gpuFrameBufferPtr)
+void broadcast_server::sendFrame(void *gpuFrameBufferPtr)
 {
 #ifdef CHANGE_RESOLUTION
 	static unsigned int half_w = IMAGE_WIDTH*RESOLUTION_FACTOR;
@@ -469,23 +469,10 @@ void broadcast_server::sendFrame(unsigned char *img, void *gpuFrameBufferPtr)
 	scale ( img, halfImg, RESOLUTION_FACTOR );
 #endif
 
-	if (saveFrame)
-	{
-		char date[128];
-		time_t rawtime;
-		struct tm * timeinfo;
-		time(&rawtime);
-		timeinfo = localtime (&rawtime);
-		strftime (date,sizeof(date),"%Y-%m-%d_%OH_%OM_%OS",timeinfo);
-		std::stringstream filename;
-		filename << "Sight_" << date << ".png";
-		pngEncoder->savePNG(filename.str(), img);
-		std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
-		saveFrame = false;
-	}
+
 	if (gpuFrameBufferPtr)
 	{
-		sendNvPipeFrame (img);
+		sendNvPipeFrame (gpuFrameBufferPtr);
 	}
 	else
 	{
@@ -618,3 +605,17 @@ void broadcast_server::scale ( unsigned char *in, unsigned char *out, float fact
 //
 //=======================================================================================
 //
+void broadcast_server::save(unsigned char *img)
+{
+	char date[128];
+	time_t rawtime;
+	struct tm * timeinfo;
+	time(&rawtime);
+	timeinfo = localtime (&rawtime);
+	strftime (date,sizeof(date),"%Y-%m-%d_%OH_%OM_%OS",timeinfo);
+	std::stringstream filename;
+	filename << "Sight_" << date << ".png";
+	pngEncoder->savePNG(filename.str(), img);
+	std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
+	m_saveFrame = false;
+}

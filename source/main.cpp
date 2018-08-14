@@ -51,7 +51,7 @@ void display ()
 		try
 		{
 			// Use the next line only when using GPU encoding
-			wsserver->sendFrame(pixels, renderer->getGPUFrameBufferPtr());
+			wsserver->sendFrame(renderer->getGPUFrameBufferPtr());
 			//wsserver->sendFrame(pixels);
 		}
 		catch ( Exception& e )
@@ -59,6 +59,11 @@ void display ()
 			std::cout << e.getErrorString().c_str() << std::endl;
 			exit(1);
 		}
+	}
+	if (wsserver->saveFrame())
+	{
+		renderer->getPixels(pixels);
+		wsserver->save(pixels);
 	}
 
 	if (flag)

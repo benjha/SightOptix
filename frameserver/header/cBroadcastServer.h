@@ -87,8 +87,9 @@ public:
     void 	run							( uint16_t 				port							);
     void 	sendFrame 					( float 				*img							);
     void 	sendFrame 					( unsigned char			*img							);
+
 #ifdef NVPIPE_ENCODING
-    void	sendFrame					( unsigned char *img, void *gpuFrameBufferPtr  );
+    void	sendFrame					( void *gpuFrameBufferPtr  );
 #endif
     void 	setFrame 					( float 				*img							);
     void 	setMouseHandler				( cMouseHandler			*mouseH							);
@@ -96,6 +97,8 @@ public:
     void 	setMessageHandler			( cMessageHandler		*messageH						);
 
     bool	sendMoreFrames				(	) 				{return needMoreFrames; };
+    bool 	saveFrame					( 	)				{return m_saveFrame; };
+    void	save						( unsigned char *img);
 
 private:
 
@@ -104,7 +107,7 @@ private:
     void	sendJPEGFrame 			( unsigned char *rgb ); // img must be RGB 8 bits per channel
     void	sendNvPipeFrame 		( unsigned char *rgba ); // img must be RGBA 8 bits per channel
     void	sendNvPipeFrame 		(void *rgbaDevice ); //
-    bool				needMoreFrames, stop, saveFrame;
+    bool				needMoreFrames, stop, m_saveFrame;
     typedef	std::set<connection_hdl,std::owner_less<connection_hdl>> con_list;
     server 				m_server;
     con_list 			m_connections;

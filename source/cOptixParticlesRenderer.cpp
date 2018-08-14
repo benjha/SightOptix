@@ -289,7 +289,7 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 	{
 		m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
 		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
-		sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
+		//sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
 	}
 #ifdef POST_PROCESSING
 
@@ -797,4 +797,9 @@ void cOptixParticlesRenderer::onKeyboardEvent ()
 		}
 	}
 
+}
+
+void cOptixParticlesRenderer::getPixels (unsigned char *pixels)
+{
+	sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
 }
