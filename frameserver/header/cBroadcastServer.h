@@ -18,37 +18,48 @@
 
 //#define REMOTE
 #define REMOTE_GPU_ENCODING
-//#define	FULLHD
+//#define       FULLHD
 //#define EVEREST
 
+#define SERVER_PORT     9002
 
-#define	SERVER_PORT 	9002
-
-#ifdef FULLHD
-	#define	IMAGE_WIDTH		1920
-	#define IMAGE_HEIGHT	1080
-#endif
 
 #ifdef REMOTE_GPU_ENCODING
-	#define	NVPIPE_ENCODING
-	#define MBPS				32
-	#define TARGET_FPS			30
-	#define	IMAGE_WIDTH			1920
-	#define IMAGE_HEIGHT		1088
+        #define NVPIPE_ENCODING
+        #define MBPS                            128
+        #define TARGET_FPS                      30
+        //#define TWOK
+        //#define FOURK
+        #define FULLHD
 #endif
 
 #ifdef REMOTE
-	#define JPEG_ENCODING
-	//#define CHANGE_RESOLUTION
-	#define	RESOLUTION_FACTOR	1.0f
-	#define	IMAGE_WIDTH			1920
-	#define IMAGE_HEIGHT		1080
+        #define JPEG_ENCODING
+        //#define CHANGE_RESOLUTION
+        #define RESOLUTION_FACTOR       1.0f
+        #define FOURK
 #endif
 
 #ifdef EVEREST
-	#define	IMAGE_WIDTH		1920*2
-	#define IMAGE_HEIGHT	1080
+        #define IMAGE_WIDTH             1920*2
+        #define IMAGE_HEIGHT    1080
 #endif
+
+#ifdef FULLHD
+        #define IMAGE_WIDTH             1920
+        #define IMAGE_HEIGHT    1088
+#endif
+
+#ifdef TWOK
+        #define IMAGE_WIDTH     2560
+        #define IMAGE_HEIGHT    1440
+#endif
+
+#ifdef FOURK
+        #define IMAGE_WIDTH     4096
+        #define IMAGE_HEIGHT    2160
+#endif
+
 
 
 typedef websocketpp::server<websocketpp::config::asio> server;

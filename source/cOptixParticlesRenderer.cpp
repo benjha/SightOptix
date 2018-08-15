@@ -283,20 +283,20 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 		//m_context["sqrt_diffuse_samples"]->setInt( 3 );
 	  //  m_context["sqrt_occlusion_samples"]->setInt(3);
 	//}
+	m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
+
 #ifdef POST_PROCESSING
 	if (!m_denoiserEnabled)
 #endif
 	{
-		m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
 		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
-		//sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
 	}
 #ifdef POST_PROCESSING
 
 	if (m_denoiserEnabled && m_denoise)
 	{
 		m_clDenoiser->execute();
-		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
+		m_context->launch( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, m_width, m_height );
 
 		//sutil::displayBuffer(pixels, m_denoisedBuffer->get());
 		// check albedo:
@@ -343,7 +343,7 @@ void cOptixParticlesRenderer::createContext ( 	)
 {
 	// Set up context
 	m_context = Context::create();
-	m_context->setEntryPointCount( 2 );
+	m_context->setEntryPointCount( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR + 1 );
 	m_context->setRayTypeCount( 2 );
 	std::vector<int> devices = m_context->getEnabledDevices();
 
@@ -376,7 +376,8 @@ void cOptixParticlesRenderer::createContext ( 	)
     Buffer normalBuffer = m_context->createBuffer(RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height);
     m_context["normal_buffer"]->set(normalBuffer);
 
-    m_denoisedBuffer = m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
+    m_denoisedBuffer = m_context->createBuffer( RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
+    m_context["denoised_buffer"]->set(m_denoisedBuffer);
 
 #endif
 
@@ -402,6 +403,14 @@ void cOptixParticlesRenderer::createContext ( 	)
 
 	Program exception_program2 = m_context->createProgramFromPTXFile( ptx_path, "exception" );
 	m_context->setExceptionProgram( ENTRY_POINT_FLOAT4_TO_COLOR, exception_program2 );
+
+	// Float4 to color Program is needed to support GPU encoding and denoising
+	Program float4TOcolorDenoisedBuffer = m_context->createProgramFromPTXFile( ptx_path, "float4TOcolorDenoisedBuffer" );
+	m_context->setRayGenerationProgram( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, float4TOcolorDenoisedBuffer );
+
+	Program exception_program3 = m_context->createProgramFromPTXFile( ptx_path, "exception2" );
+	m_context->setExceptionProgram( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, exception_program3 );
+
 
 
 	// Miss program
@@ -547,7 +556,7 @@ void cOptixParticlesRenderer::createMaterial(	)
 
     // AO shader
     m_context["occlusion_distance"]->setFloat(100.0f);
-    m_context["sqrt_occlusion_samples"]->setInt(4);
+    m_context["sqrt_occlusion_samples"]->setInt(1);
 
 //    Program transparent_ch = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "closest_hit_radiance" );
 //    Program transparent_ah = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "any_hit_shadow" );

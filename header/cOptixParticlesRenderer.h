@@ -34,7 +34,8 @@ public:
 	enum
 	{
 		ENTRY_POINT_MAIN_SHADING=0,
-		ENTRY_POINT_FLOAT4_TO_COLOR
+		ENTRY_POINT_FLOAT4_TO_COLOR,
+		ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR
 	};
 						cOptixParticlesRenderer		( bool shareBuffer	);
 						~cOptixParticlesRenderer	(	);

@@ -76,6 +76,7 @@ rtDeclareVariable(unsigned int,	 frame, , );
 rtDeclareVariable(float,         jitter_factor, ,) = 0.0f;
 
 rtBuffer<float4, 2>              output_buffer;
+rtBuffer<float4, 2>				 denoised_buffer;
 rtBuffer<uchar4, 2>				 bufferToEncode;
 rtBuffer<float4, 2>              accum_buffer;
 rtBuffer<float4, 2>              albedo_buffer;
@@ -141,6 +142,13 @@ RT_PROGRAM void exception()
   output_buffer[launch_index] = bad_color;
 }
 
+RT_PROGRAM void exception2()
+{
+  const unsigned int code = rtGetExceptionCode();
+  rtPrintf( "Caught exception 0x%X at launch index (%d,%d)\n", code, launch_index.x, launch_index.y );
+  denoised_buffer[launch_index] = bad_color;
+}
+
 
 RT_PROGRAM void miss()
 {
@@ -152,11 +160,18 @@ RT_PROGRAM void miss()
 		prd_radiance.normal = make_float3(0.0f,0.0f,0.0f);
 	}
 }
-
+// no denoising
 RT_PROGRAM void float4TOcolor ()
 {
 	bufferToEncode[launch_index] = make_color (make_float3(output_buffer[launch_index]));
 }
+
+// when denoising is used
+RT_PROGRAM void float4TOcolorDenoisedBuffer ()
+{
+	bufferToEncode[launch_index] = make_color (make_float3(denoised_buffer[launch_index]));
+}
+
 
 // AO
 //=======================================================================================

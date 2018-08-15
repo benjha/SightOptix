@@ -52,6 +52,7 @@ void display ()
 		{
 			// Use the next line only when using GPU encoding
 			wsserver->sendFrame(renderer->getGPUFrameBufferPtr());
+			//renderer->getPixels(pixels);
 			//wsserver->sendFrame(pixels);
 		}
 		catch ( Exception& e )
