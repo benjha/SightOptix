@@ -349,28 +349,13 @@ void broadcast_server::sendFrame(unsigned char *img)
 	scale ( img, halfImg, RESOLUTION_FACTOR );
 #endif
 
-	if (m_saveFrame)
-	{
-		char date[128];
-		time_t rawtime;
-		struct tm * timeinfo;
-		time(&rawtime);
-		timeinfo = localtime (&rawtime);
-		strftime (date,sizeof(date),"%Y-%m-%d_%OH_%OM_%OS",timeinfo);
-		std::stringstream filename;
-		filename << "Sight_" << date << ".png";
-		pngEncoder->savePNG(filename.str(), img);
-		std::cout << "Sight@Frameserver: " << filename.str().data() << " saved!\n";
-		m_saveFrame = false;
-	}
-
 #ifdef JPEG_ENCODING
 	sendJPEGFrame	(img);
 #endif
 #ifdef NVPIPE_ENCODING
 	sendNvPipeFrame (img);
 #endif
-#ifdef FULLHD
+#ifdef NO_COMPRESSION
 	con_list::iterator it;
 	for (it = m_connections.begin(); it != m_connections.end(); it++)
 	{
@@ -405,7 +390,7 @@ void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";
 	}
-	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
+	std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
 	for (auto it : m_connections)
 	{
 		try
@@ -427,15 +412,6 @@ void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 //
 void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 {
-	int i = 0;
-	unsigned char c[1920*1088*4];
-	for (i=0;i<1920*1088*4;i+=4)
-	{
-		c[i] = 255;
-		c[i+1] = 0;
-		c[i+2] = 0;
-		c[i+3] = 255;
-	}
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgbaDevice))
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";

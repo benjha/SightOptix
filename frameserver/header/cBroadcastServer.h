@@ -18,7 +18,7 @@
 
 //#define REMOTE
 #define REMOTE_GPU_ENCODING
-//#define       FULLHD
+//#define NO_COMPRESSION
 //#define EVEREST
 
 #define SERVER_PORT     9002
@@ -26,18 +26,23 @@
 
 #ifdef REMOTE_GPU_ENCODING
         #define NVPIPE_ENCODING
-        #define MBPS                            128
+        //#define MBPS                            32 // Works for FULLHD
+		#define MBPS                            256
         #define TARGET_FPS                      30
         //#define TWOK
-        //#define FOURK
-        #define FULLHD
+        #define FOURK
+        //#define FULLHD
+#endif
+
+#ifdef NO_COMPRESSION
+	#define FULLHD
 #endif
 
 #ifdef REMOTE
         #define JPEG_ENCODING
         //#define CHANGE_RESOLUTION
         #define RESOLUTION_FACTOR       1.0f
-        #define FOURK
+        #define FULLHD
 #endif
 
 #ifdef EVEREST
