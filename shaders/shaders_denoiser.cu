@@ -25,9 +25,6 @@
 #include "random.h"
 using namespace optix;
 
-// How to compile cu files for optix
-//  /usr/local/cuda-8.0/bin/nvcc -I../frameserver/header -I../frameserver/communications -I../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include -O3 -std=c++11 -gencode arch=compute_35,code=sm_35 -ptx -m64 shaders.cu
-
 
 struct BasicLight
 {
@@ -78,9 +75,14 @@ rtBuffer<unsigned int, 2>        rnd_seeds;
 rtDeclareVariable(unsigned int,	 frame, , );
 rtDeclareVariable(float,         jitter_factor, ,) = 0.0f;
 
-rtBuffer<uchar4, 2>              output_buffer;
+rtBuffer<float4, 2>              output_buffer;
+rtBuffer<float4, 2>				 denoised_buffer;
 rtBuffer<uchar4, 2>				 bufferToEncode;
 rtBuffer<float4, 2>              accum_buffer;
+
+rtBuffer<float4, 2>              albedo_buffer;
+rtBuffer<float4, 2>              normal_buffer;
+
 
 
 //#define TIME_VIEW
@@ -119,17 +121,17 @@ RT_PROGRAM void pinhole_camera()
 	output_buffer[launch_index] = make_color( make_float3(  pixel_time ) );
 #else
 	float4 acc_val = accum_buffer[launch_index];
-
 	if( frame > 1 ){
 		acc_val = lerp( acc_val, make_float4( prd.result, 0.f), 1.0f / static_cast<float>( frame+1 ) );
+
 	}
 	else
 		acc_val = make_float4(prd.result, 0.f);
 
-	output_buffer[launch_index] = make_color(make_float3(acc_val));
+	output_buffer[launch_index] = acc_val;
 	accum_buffer[launch_index] = acc_val;
-	//albedo_buffer[launch_index] = make_float4(prd.albedo, 1.0f);
-	//normal_buffer[launch_index] = make_float4(prd.normal,1.0f);
+	albedo_buffer[launch_index] = make_float4(prd.albedo, 1.0f);
+	normal_buffer[launch_index] = make_float4(prd.normal,1.0f);
 
 #endif
 }
@@ -138,9 +140,15 @@ RT_PROGRAM void exception()
 {
   const unsigned int code = rtGetExceptionCode();
   rtPrintf( "Caught exception 0x%X at launch index (%d,%d)\n", code, launch_index.x, launch_index.y );
-  output_buffer[launch_index] = make_color(make_float3(bad_color));
+  output_buffer[launch_index] = bad_color;
 }
 
+RT_PROGRAM void exception2()
+{
+  const unsigned int code = rtGetExceptionCode();
+  rtPrintf( "Caught exception 0x%X at launch index (%d,%d)\n", code, launch_index.x, launch_index.y );
+  denoised_buffer[launch_index] = bad_color;
+}
 
 
 RT_PROGRAM void miss()
@@ -153,6 +161,18 @@ RT_PROGRAM void miss()
 		prd_radiance.normal = make_float3(0.0f,0.0f,0.0f);
 	}
 }
+// no denoising
+RT_PROGRAM void float4TOcolor ()
+{
+	bufferToEncode[launch_index] = make_color (make_float3(output_buffer[launch_index]));
+}
+
+// when denoising is used
+RT_PROGRAM void float4TOcolorDenoisedBuffer ()
+{
+	bufferToEncode[launch_index] = make_color (make_float3(denoised_buffer[launch_index]));
+}
+
 
 // AO
 //=======================================================================================

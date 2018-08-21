@@ -108,8 +108,19 @@ void cOptixParticlesRenderer::init ( int width, int height, std::vector<float> *
 #else
 		DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
 		resetAccumulation ();
-		m_context->launch ( 0, 0 );
+		m_context->launch ( ENTRY_POINT_MAIN_SHADING, 0 );
 		DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
+
+#ifdef POST_PROCESSING
+		DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
+		m_context->launch ( ENTRY_POINT_FLOAT4_TO_COLOR, 0);
+		DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
+
+		DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
+		m_context->launch ( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, 0);
+		DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
+#endif
+
 #endif
 
 	} catch( Exception& e ){
@@ -283,18 +294,20 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 		//m_context["sqrt_diffuse_samples"]->setInt( 3 );
 	  //  m_context["sqrt_occlusion_samples"]->setInt(3);
 	//}
-	m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
+
 
 #ifdef POST_PROCESSING
 	if (!m_denoiserEnabled)
 #endif
 	{
-		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
+		m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
+		//m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
 	}
 #ifdef POST_PROCESSING
 
 	if (m_denoiserEnabled && m_denoise)
 	{
+
 		m_clDenoiser->execute();
 		m_context->launch( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, m_width, m_height );
 
@@ -343,21 +356,29 @@ void cOptixParticlesRenderer::createContext ( 	)
 {
 	// Set up context
 	m_context = Context::create();
-	m_context->setEntryPointCount( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR + 1 );
-	m_context->setRayTypeCount( 2 );
+		m_context->setRayTypeCount( 2 );
 	std::vector<int> devices = m_context->getEnabledDevices();
 
 
 #ifndef POST_PROCESSING
+	m_context->setEntryPointCount( ENTRY_POINT_MAIN_SHADING + 1 );
 	// Output buffer
-	Buffer buffer =  m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
+	//Buffer buffer =  m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
+	Buffer buffer =  m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_UNSIGNED_BYTE4, m_width, m_height );
 	m_context["output_buffer"]->set( buffer );
 
 	// Accumulation buffer
 	Buffer accum_buffer = m_context->createBuffer( RT_BUFFER_INPUT_OUTPUT | RT_BUFFER_GPU_LOCAL, RT_FORMAT_FLOAT4, m_width, m_height);
 	m_context["accum_buffer"]->set( accum_buffer );
 	//resetAccumulation();
+	std::string ptx_path( "shaders/shaders.ptx" );
+
+	if (m_shareBuffer)
+	{
+		m_bufferPtr = buffer->getDevicePointer(0);
+	}
 #else
+	m_context->setEntryPointCount( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR + 1 );
 	// Output buffer
 	Buffer buffer =  m_context->createBuffer( RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
 	m_context["output_buffer"]->set( buffer );
@@ -379,14 +400,32 @@ void cOptixParticlesRenderer::createContext ( 	)
     m_denoisedBuffer = m_context->createBuffer( RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_FLOAT4, m_width, m_height );
     m_context["denoised_buffer"]->set(m_denoisedBuffer);
 
-#endif
+    std::string ptx_path( "shaders/shaders_denoiser.ptx" );
 
-    //
+    // Buffer is float4 and NvPipe needs uchar thus Float4 to Color when denoiser is off
+    Program float4TOcolor = m_context->createProgramFromPTXFile ( ptx_path, "float4TOcolor");
+    m_context->setRayGenerationProgram ( ENTRY_POINT_FLOAT4_TO_COLOR, float4TOcolor );
+
+    Program exception_program2 = m_context->createProgramFromPTXFile( ptx_path, "exception" );
+    m_context->setExceptionProgram( ENTRY_POINT_FLOAT4_TO_COLOR, exception_program2 );
+
+    // Float4 to color Program is needed to support GPU encoding and denoising
+   	Program float4TOcolorDenoisedBuffer = m_context->createProgramFromPTXFile( ptx_path, "float4TOcolorDenoisedBuffer" );
+   	m_context->setRayGenerationProgram( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, float4TOcolorDenoisedBuffer );
+
+   	Program exception_program3 = m_context->createProgramFromPTXFile( ptx_path, "exception2" );
+   	m_context->setExceptionProgram( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, exception_program3 );
+
+    // Buffer to compress with GPU encoding
     Buffer bufferToStream =  m_context->createBuffer( RT_BUFFER_OUTPUT, RT_FORMAT_UNSIGNED_BYTE4, m_width, m_height );
     m_context["bufferToEncode"]->set( bufferToStream );
 
+	if (m_shareBuffer)
+	{
+		m_bufferPtr = bufferToStream->getDevicePointer(0);
+	}
 
-	std::string ptx_path( "shaders/shaders.ptx" );
+#endif
 
 	// Ray generation program
 	Program ray_gen_program = m_context->createProgramFromPTXFile( ptx_path, "pinhole_camera" );
@@ -396,21 +435,6 @@ void cOptixParticlesRenderer::createContext ( 	)
 	Program exception_program = m_context->createProgramFromPTXFile( ptx_path, "exception" );
 	m_context->setExceptionProgram( ENTRY_POINT_MAIN_SHADING, exception_program );
 	m_context["bad_color"]->setFloat( 1.0f, 0.0f, 1.0f, 0.0f );
-
-	// Float4 to color Program is needed to support GPU encoding
-	Program float4TOcolor = m_context->createProgramFromPTXFile( ptx_path, "float4TOcolor" );
-	m_context->setRayGenerationProgram( ENTRY_POINT_FLOAT4_TO_COLOR, float4TOcolor );
-
-	Program exception_program2 = m_context->createProgramFromPTXFile( ptx_path, "exception" );
-	m_context->setExceptionProgram( ENTRY_POINT_FLOAT4_TO_COLOR, exception_program2 );
-
-	// Float4 to color Program is needed to support GPU encoding and denoising
-	Program float4TOcolorDenoisedBuffer = m_context->createProgramFromPTXFile( ptx_path, "float4TOcolorDenoisedBuffer" );
-	m_context->setRayGenerationProgram( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, float4TOcolorDenoisedBuffer );
-
-	Program exception_program3 = m_context->createProgramFromPTXFile( ptx_path, "exception2" );
-	m_context->setExceptionProgram( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR, exception_program3 );
-
 
 
 	// Miss program
@@ -442,10 +466,6 @@ void cOptixParticlesRenderer::createContext ( 	)
 	seed->unmap();
 	m_context["rnd_seeds"]->setBuffer(seed);
 
-	if (m_shareBuffer)
-	{
-		m_bufferPtr = bufferToStream->getDevicePointer(0);
-	}
 }
 //
 //=======================================================================================
@@ -782,9 +802,10 @@ void cOptixParticlesRenderer::setupPostprocessing( )
 	// tonemap stage.
 
 	m_clDenoiser = m_context->createCommandList();
-	m_clDenoiser->appendLaunch(0, m_width, m_height);
+	m_clDenoiser->appendLaunch(ENTRY_POINT_MAIN_SHADING, m_width, m_height);
 	//m_clDenoiser->appendPostprocessingStage(m_tonemapStage, m_width, m_height);
 	m_clDenoiser->appendPostprocessingStage(m_denoiserStage, m_width, m_height);
+
 	m_clDenoiser->finalize();
 
 
@@ -810,5 +831,7 @@ void cOptixParticlesRenderer::onKeyboardEvent ()
 
 void cOptixParticlesRenderer::getPixels (unsigned char *pixels)
 {
+
 	sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());
+	//std::cout << "getPixels\n";
 }

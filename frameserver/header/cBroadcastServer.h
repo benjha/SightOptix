@@ -26,12 +26,12 @@
 
 #ifdef REMOTE_GPU_ENCODING
         #define NVPIPE_ENCODING
-        //#define MBPS                            32 // Works for FULLHD
-		#define MBPS                            256
+        #define MBPS                            32 // Works for FULLHD
+		//#define MBPS                            256
         #define TARGET_FPS                      30
         //#define TWOK
-        #define FOURK
-        //#define FULLHD
+        //#define FOURK
+        #define FULLHD
 #endif
 
 #ifdef NO_COMPRESSION
@@ -61,7 +61,7 @@
 #endif
 
 #ifdef FOURK
-        #define IMAGE_WIDTH     4096
+        #define IMAGE_WIDTH     3840
         #define IMAGE_HEIGHT    2160
 #endif
 

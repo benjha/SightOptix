@@ -31,7 +31,6 @@
 //#define	COLOR_LOOK_UP
 
 // How to compile cu files for optix
-
 //  /usr/local/cuda-8.0/bin/nvcc -I../frameserver/header -I../frameserver/communications -I../../../Programs/NVIDIA-OptiX-SDK-5.0.1-linux64/include -O3 -std=c++11 -gencode arch=compute_35,code=sm_35 -ptx -m64 particles.cu
 
 

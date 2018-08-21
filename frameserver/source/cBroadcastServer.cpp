@@ -65,7 +65,10 @@ broadcast_server::broadcast_server() {
 	if (!(jpegEncoder->initEncoder())) {
 		std::cout << "Sight@Frameserver. Warning: JPEG Encoder failed at initialization \n";
 	}
-	std::cout << "Sight@Frameserver: JPEG Encoder initialized\n";
+	else
+	{
+		std::cout << "Sight@Frameserver: JPEG Encoder initialized\n";
+	}
 #endif
 
 #ifdef NVPIPE_ENCODING
@@ -76,7 +79,10 @@ broadcast_server::broadcast_server() {
 	 {
 		 std::cout << "Sight@Frameserver: Failed to create GPU encoder: " << NvPipe_GetError(NULL) << std::endl;
 	 }
-	 std::cout << "Sight@Frameserver: GPU Encoder & Wrapper initialized\n";
+	 else
+	 {
+		 std::cout << "Sight@Frameserver: GPU Encoder & Wrapper initialized\n";
+	 }
 #endif
 
 	pngEncoder = new cPNGEncoder ();
@@ -85,7 +91,10 @@ broadcast_server::broadcast_server() {
 	{
 		std::cout << "Warning: PNG Encoder failed at initialization \n";
 	}
-	std::cout << "Sight@Frameserver: PNG Encoder initialized\n";
+	else
+	{
+		std::cout << "Sight@Frameserver: PNG Encoder initialized\n";
+	}
 }
 //
 //=======================================================================================
@@ -390,7 +399,7 @@ void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";
 	}
-	std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
+	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
 	for (auto it : m_connections)
 	{
 		try
