@@ -3,7 +3,6 @@
  * accompanying file Copyright.txt for details.
  */
 #include <sstream>
-#include <time.h>
 
 #include <cBroadcastServer.h>
 #include <cMouseEventHandler.h>
@@ -175,6 +174,8 @@ void broadcast_server::on_message(connection_hdl hdl, server::message_ptr msg) {
 			// These strings come from HTML viewer
 			if (val.str().compare("NXTFR") == 0
 					|| val.str().compare("STVIS") == 0) {
+				std::cout << m_timer.getElapsedMilliseconds() << std::endl;
+
 #ifdef	JPEG_ENCODING
 				stTimer2 = high_resolution_clock::now();
 //				adjustJpegQuality();
@@ -421,6 +422,7 @@ void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 //
 void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 {
+	m_timer.reset();
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgbaDevice))
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";

@@ -16,6 +16,9 @@
 #include <websocketpp/server.hpp>
 #include <functional>
 
+#include "cTimer.h"
+//#define
+
 //#define REMOTE
 #define REMOTE_GPU_ENCODING
 //#define NO_COMPRESSION
@@ -90,6 +93,7 @@ class cMessageHandler;
 #endif
 
 class cPNGEncoder;
+class cTimer;
 
 class broadcast_server {
 public:
@@ -135,6 +139,7 @@ private:
 
     // PNG Encoder
 	cPNGEncoder								*pngEncoder;
+	cTimer									m_timer;
 
 #ifdef NVPIPE_ENCODING
 	cNvPipeEncoderWrapper					*m_nvpipe;
@@ -153,7 +158,7 @@ private:
 	float 									targetTime;
 	//streaming timers used to calculate image transport throughput
 	high_resolution_clock::time_point		stTimer1, stTimer2;
-	// image transport duration in milliseconds
+	// image transport duration in microiseconds
 	std::chrono::microseconds				stDuration;
 #endif
 #ifdef SAVE_IMG

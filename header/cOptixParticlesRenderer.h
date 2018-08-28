@@ -15,7 +15,7 @@
 #include "../header/Arcball.h"
 
 
-//#define POST_PROCESSING
+#define POST_PROCESSING
 
 class cPNGEncoder;
 

@@ -301,7 +301,7 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 #endif
 	{
 		m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
-		//m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
+		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
 	}
 #ifdef POST_PROCESSING
 
