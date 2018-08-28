@@ -42,9 +42,9 @@ RUN mkdir sight &&\
 #       cmake .. -DNVPIPE_WITH_OPENGL=OFF &&\
 #       make install &&\
 # build
-        cd .. &&\
+#        cd .. &&\
 # NvPipe 
-        cd .. &&\
+#        cd .. &&\
 # Programs
         cd .. &&\
         mkdir code &&\
