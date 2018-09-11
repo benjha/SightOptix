@@ -61,7 +61,8 @@ ENV LD_LIBRARY_PATH /sight/Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/lib64:/usr/li
 RUN cd /sight/code/SightOptix/shaders &&\
         rm *.ptx && \
         nvcc -I../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include -O3 -gencode arch=compute_70,code=sm_70 -ptx -m64 particles.cu &&\
-        nvcc -I../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include -O3 -gencode arch=compute_70,code=sm_70 -ptx -m64 shaders.cu
+        nvcc -I../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include -O3 -gencode arch=compute_70,code=sm_70 -ptx -m64 shaders.cu &&\
+        nvcc -I../../../Programs/NVIDIA-OptiX-SDK-5.1.0-linux64/include -O3 -gencode arch=compute_70,code=sm_70 -ptx -m64 shaders_denoiser.cu
 
 RUN cd /sight/code/SightOptix/Release &&\
         sed -i 's/\/usr\/local\/cuda-8.0\/bin\/nvcc/nvcc/g' makefile &&\

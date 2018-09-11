@@ -11,6 +11,7 @@
 
 #include "cPNGEncoder.h"
 
+
 #ifdef JPEG_ENCODING
 #include "cTurboJpegEncoder.h"
 #endif
@@ -94,6 +95,9 @@ broadcast_server::broadcast_server() {
 	{
 		std::cout << "Sight@Frameserver: PNG Encoder initialized\n";
 	}
+#ifdef STATS
+    m_statsTimer.reset();
+#endif
 }
 //
 //=======================================================================================
@@ -174,7 +178,9 @@ void broadcast_server::on_message(connection_hdl hdl, server::message_ptr msg) {
 			// These strings come from HTML viewer
 			if (val.str().compare("NXTFR") == 0
 					|| val.str().compare("STVIS") == 0) {
-				std::cout << m_timer.getElapsedMilliseconds() << std::endl;
+#ifdef	STATS
+				m_netStats.add(m_timer.getElapsedMilliseconds());
+#endif
 
 #ifdef	JPEG_ENCODING
 				stTimer2 = high_resolution_clock::now();
@@ -422,7 +428,20 @@ void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 //
 void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 {
+#ifdef STATS
+
 	m_timer.reset();
+
+    // Statistics
+    const float updateMillis = 2000.0f;
+    bool statsTimerElapsed = m_statsTimer.getElapsedMilliseconds() >= updateMillis;
+    if (statsTimerElapsed)
+    {
+        m_statsTimer.reset();
+        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " ms" << std::endl;
+    }
+
+#endif
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgbaDevice))
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";

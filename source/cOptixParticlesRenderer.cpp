@@ -301,7 +301,9 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 #endif
 	{
 		m_context->launch( ENTRY_POINT_MAIN_SHADING, m_width, m_height);
+#ifdef POST_PROCESSING
 		m_context->launch( ENTRY_POINT_FLOAT4_TO_COLOR, m_width, m_height );
+#endif
 	}
 #ifdef POST_PROCESSING
 
@@ -575,7 +577,7 @@ void cOptixParticlesRenderer::createMaterial(	)
     m_context["ambient_light_color"]->setFloat(1.0f,1.0f,1.0f);
 
     // AO shader
-    m_context["occlusion_distance"]->setFloat(100.0f);
+    m_context["occlusion_distance"]->setFloat(20.0f);
     m_context["sqrt_occlusion_samples"]->setInt(1);
 
 //    Program transparent_ch = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "closest_hit_radiance" );
