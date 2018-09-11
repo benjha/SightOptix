@@ -50,10 +50,14 @@ void display ()
 	{
 		try
 		{
+#ifdef REMOTE_GPU_ENCODING
 			// Use the next line only when using GPU encoding
 			wsserver->sendFrame(renderer->getGPUFrameBufferPtr());
-			//renderer->getPixels(pixels);
-			//wsserver->sendFrame(pixels);
+#endif
+#if defined(REMOTE) || defined(NO_COMPRESSION)
+			renderer->getPixels(pixels);
+			wsserver->sendFrame(pixels);
+#endif
 		}
 		catch ( Exception& e )
 		{

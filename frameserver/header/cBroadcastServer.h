@@ -20,8 +20,8 @@
 #include "cStats.h"
 
 #define STATS
-//#define REMOTE
-#define REMOTE_GPU_ENCODING
+#define REMOTE
+//#define REMOTE_GPU_ENCODING
 //#define NO_COMPRESSION
 //#define EVEREST
 
@@ -140,7 +140,7 @@ private:
     // PNG Encoder
 	cPNGEncoder								*pngEncoder;
 	cTimer									m_timer, m_statsTimer;
-	AverageStats							m_netStats; // reports round-trip latency send (server) -> receive (client) -> decoding (client) -> send Next_frame (client) -> receive (server)
+	AverageStats							m_netStats; // reports round-trip latency encode -> send (server) -> receive (client) -> decoding (client) -> send Next_frame msg (client) -> receive Next_frame msg (server)
 
 
 

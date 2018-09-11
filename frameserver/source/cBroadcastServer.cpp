@@ -321,6 +321,22 @@ void broadcast_server::sendJPEGFrame (unsigned char *rgb)
 #ifdef CHANGE_RESOLUTION
 	if (!jpegEncoder->encode(halfImg))
 #else
+
+#ifdef STATS
+
+	m_timer.reset();
+
+    // Statistics
+    const float updateMillis = 2000.0f;
+    bool statsTimerElapsed = m_statsTimer.getElapsedMilliseconds() >= updateMillis;
+    if (statsTimerElapsed)
+    {
+        m_statsTimer.reset();
+        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " ms" << std::endl;
+    }
+
+#endif
+
 	if (!jpegEncoder->encode(rgb))
 #endif
 	{
