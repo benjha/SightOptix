@@ -382,7 +382,7 @@ namespace
 {
 
 
-static const float FPS_UPDATE_INTERVAL = 2.0;  //seconds
+static const float FPS_UPDATE_INTERVAL = 4.0;  //seconds
 
 } // namespace
 

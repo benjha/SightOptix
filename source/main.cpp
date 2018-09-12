@@ -70,6 +70,9 @@ void display ()
 		renderer->getPixels(pixels);
 		wsserver->save(pixels);
 	}
+#ifdef STATS
+	wsserver->printStats ();
+#endif
 
 	if (flag)
 	{
