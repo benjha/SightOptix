@@ -55,7 +55,7 @@
 #endif
 
 #ifdef FULLHD
-        #define IMAGE_WIDTH             1920
+        #define IMAGE_WIDTH     1920
         #define IMAGE_HEIGHT    1088
 #endif
 
@@ -140,10 +140,12 @@ private:
 
     // PNG Encoder
 	cPNGEncoder								*pngEncoder;
-	cTimer									m_netStatsTimer, m_statsTimer, m_sendTimer, m_encStatsTimer;
+	cTimer									m_netStatsTimer, m_statsTimer;
+	cTimer									m_sendTimer,	 m_encTimer;
 	AverageStats							m_netStats; // reports round-trip latency encode -> send (server) -> receive (client) -> decoding (client) -> send Next_frame msg (client) -> receive Next_frame msg (server)
 	AverageStats							m_encStats; // reports encoder latency
 	AverageStats							m_sendStats; // reports send latency
+	AverageStats							m_decStats;  // reports an approximate of decoding latency
 
 
 
@@ -171,3 +173,4 @@ private:
     void	scale				( unsigned char *in, unsigned char *out, float factor );
 #endif
 };
+

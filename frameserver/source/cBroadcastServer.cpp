@@ -99,6 +99,7 @@ broadcast_server::broadcast_server() {
     m_statsTimer.reset();
     m_encStats.reset();
     m_sendStats.reset();
+    m_decStats.reset ();
 #endif
 }
 //
@@ -427,14 +428,14 @@ void broadcast_server::sendFrame(unsigned char *img)
 void broadcast_server::sendNvPipeFrame (unsigned char *rgba)
 {
 #ifdef STATS
-	m_encStatsTimer.reset();
+	m_encTimer.reset();
 #endif
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgba))
 	{
 		std::cout << "Sight@Frameserver: Encoding error \n";
 	}
 #ifdef STATS
-	m_encStats.add (m_encStatsTimer.getElapsedMilliseconds());
+	m_encStats.add (m_encTimer.getElapsedMilliseconds());
 #endif
 	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
 	for (auto it : m_connections)
@@ -471,7 +472,7 @@ void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 #endif
 
 #ifdef STATS
-	m_encStatsTimer.reset();
+	m_encTimer.reset();
 #endif
 
 	if (!m_nvpipe->encodeAndWrapNvPipe(rgbaDevice))
@@ -479,7 +480,7 @@ void broadcast_server::sendNvPipeFrame (void *rgbaDevice)
 		std::cout << "Sight@Frameserver: Encoding error \n";
 	}
 #ifdef STATS
-	m_encStats.add (m_encStatsTimer.getElapsedMilliseconds());
+	m_encStats.add (m_encTimer.getElapsedMilliseconds());
 #endif
 	//std::cout << "Sight@Frameserver: NvPipe compressed size " << m_nvpipe->getSize() << std::endl;
 	for (auto it : m_connections)
@@ -672,15 +673,13 @@ void broadcast_server::save(unsigned char *img)
 void broadcast_server::printStats()
 {
     // Statistics
-    const float updateMillis = 2000.0f;
+    const float updateMillis = 1000.0f;
     bool statsTimerElapsed = m_statsTimer.getElapsedMilliseconds() >= updateMillis;
     if (statsTimerElapsed)
     {
         m_statsTimer.reset();
 
-        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " ms" << std::endl;
-        std::cout << "Sight@Frameserver send: "    << m_sendStats.getAverage(updateMillis) << " ms" << std::endl;
-        std::cout << "Sight@Frameserver encoder: " << m_encStats.getAverage(updateMillis) << " ms" << std::endl;
+        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " " << m_sendStats.getAverage(updateMillis) << " " << m_encStats.getAverage(updateMillis) << " ms" << std::endl;
 
     }
 }
