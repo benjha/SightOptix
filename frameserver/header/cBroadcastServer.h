@@ -20,8 +20,8 @@
 #include "cStats.h"
 
 #define STATS
-//#define REMOTE
-#define REMOTE_GPU_ENCODING
+#define REMOTE
+//#define REMOTE_GPU_ENCODING
 //#define NO_COMPRESSION
 //#define EVEREST
 

@@ -332,7 +332,7 @@ void broadcast_server::sendJPEGFrame (unsigned char *rgb)
 #endif // STATS
 
 #ifdef STATS
-    m_encStatsTimer.reset ();
+    m_encTimer.reset ();
 #endif //STATS
 
     if (!jpegEncoder->encode(rgb))
@@ -342,7 +342,7 @@ void broadcast_server::sendJPEGFrame (unsigned char *rgb)
 	}
 
 #ifdef STATS
-    m_encStats.add(m_encStatsTimer.getElapsedMilliseconds());
+    m_encStats.add(m_encTimer.getElapsedMilliseconds());
 #endif
 
 	//std::cout << "Sight@Frameserver: jpegEncoder compressed size " << jpegEncoder->getJpegSize() << std::endl;
@@ -678,8 +678,11 @@ void broadcast_server::printStats()
     if (statsTimerElapsed)
     {
         m_statsTimer.reset();
-
-        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " " << m_sendStats.getAverage(updateMillis) << " " << m_encStats.getAverage(updateMillis) << " ms" << std::endl;
-
+#ifdef REMOTE_GPU_ENCODING
+        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " " << m_sendStats.getAverage(updateMillis) << " " << m_encStats.getAverage(updateMillis) << " ms" << "size: " << m_nvpipe->getSize() << "bytes" <<  std::endl;
+#endif
+#ifdef REMOTE
+        std::cout << "Sight@Frameserver network: " << m_netStats.getAverage(updateMillis) << " " << m_sendStats.getAverage(updateMillis) << " " << m_encStats.getAverage(updateMillis) << " ms" << "size: " << jpegEncoder->getJpegSize() << "bytes" <<  std::endl;
+#endif
     }
 }
