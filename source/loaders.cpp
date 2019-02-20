@@ -13,6 +13,14 @@
 #include "../header/loaders.h"
 
 
+
+std::string getFileExtension(std::string file)
+{
+    std::size_t found = file.find_last_of(".");
+    return file.substr(found+1);
+}
+
+
 // load dataset with a decimation factor.  Useful when data does not fit in GPU Memory
 
 int loadAscii (const char* filename, std::vector<float> *positions, std::vector<float> *nrg, float *min, float *max, unsigned int decimation)
@@ -143,8 +151,8 @@ int loadAscii (const char* filename, std::vector<float> *positions, std::vector<
 	std::cout << "Num atoms: " 			<< " " << positions->size()/numComponents << std::endl;
 	//std::cout << "Num elements: " 			<< " " << vPosNRG.size()	<< std::endl;
 
-	std::cout << "Min = {" << min[0] 	<< ", " << min[1] << ", " << min[2] << " } \n";
-	std::cout << "Max = {" << max[0] 	<< ", " << max[1] << ", " << max[2] << " } \n";
+	//std::cout << "Min = {" << min[0] 	<< ", " << min[1] << ", " << min[2] << " } \n";
+	//std::cout << "Max = {" << max[0] 	<< ", " << max[1] << ", " << max[2] << " } \n";
 	std::cout << "Energy min: " << min[3] << " Energy max: " << max[3] << std::endl;
 
 	file.close();
@@ -152,4 +160,35 @@ int loadAscii (const char* filename, std::vector<float> *positions, std::vector<
 	return true;
 
 }
+
+
+void find_minmax_all(const float *pos, int n, float *min, float *max)
+{
+  float x1, x2, y1, y2, z1, z2;
+  int i=0;
+
+  // return immediately if there are no atoms, or no atoms are on.
+  if (n < 1) return;
+
+  // initialize min/max to first 'on' atom, and advance the counter.
+  pos += 4L*i;
+  x1 = x2 = pos[0];
+  y1 = y2 = pos[1];
+  z1 = z2 = pos[2];
+  pos += 4;
+  i++;
+
+  for (; i < n; i++) {
+    if (pos[0] < x1) x1 = pos[0];
+    if (pos[0] > x2) x2 = pos[0];
+    if (pos[1] < y1) y1 = pos[1];
+    if (pos[1] > y2) y2 = pos[1];
+    if (pos[2] < z1) z1 = pos[2];
+    if (pos[2] > z2) z2 = pos[2];
+    pos += 4;
+  }
+  min[0] = x1; min[1] = y1; min[2] = z1;
+  max[0] = x2; max[1] = y2; max[2] = z2;
+}
+
 

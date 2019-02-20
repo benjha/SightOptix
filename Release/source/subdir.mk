@@ -8,7 +8,8 @@ CPP_SRCS += \
 ../source/DeviceMemoryLogger.cpp \
 ../source/ImageLoader.cpp \
 ../source/PPMLoader.cpp \
-../source/cOptixParticlesRenderer.cpp \
+../source/cOptixRenderer.cpp \
+../source/cParticles.cpp \
 ../source/loaders.cpp \
 ../source/main.cpp \
 ../source/sutil.cpp 
@@ -18,7 +19,8 @@ OBJS += \
 ./source/DeviceMemoryLogger.o \
 ./source/ImageLoader.o \
 ./source/PPMLoader.o \
-./source/cOptixParticlesRenderer.o \
+./source/cOptixRenderer.o \
+./source/cParticles.o \
 ./source/loaders.o \
 ./source/main.o \
 ./source/sutil.o 
@@ -28,7 +30,8 @@ CPP_DEPS += \
 ./source/DeviceMemoryLogger.d \
 ./source/ImageLoader.d \
 ./source/PPMLoader.d \
-./source/cOptixParticlesRenderer.d \
+./source/cOptixRenderer.d \
+./source/cParticles.d \
 ./source/loaders.d \
 ./source/main.d \
 ./source/sutil.d 

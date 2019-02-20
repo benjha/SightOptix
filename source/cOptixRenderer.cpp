@@ -7,7 +7,7 @@
 #include "../frameserver/header/cMouseEventHandler.h"
 #include "../frameserver/header/cKeyboardHandler.h"
 #include "../frameserver/header/cPNGEncoder.h"
-#include "../header/cOptixParticlesRenderer.h"
+#include "../header/cOptixRenderer.h"
 #include "../header/Arcball.h"
 #include "../header/DeviceMemoryLogger.h"
 #include "../header/cColorTable.h"
@@ -24,7 +24,7 @@
  * for example, when using GPU encoding
  */
 
-cOptixParticlesRenderer::cOptixParticlesRenderer(bool shareBuffer=false)
+cOptixRenderer::cOptixRenderer(bool shareBuffer=false) : contextCreated(0)
 {
 	m_width 	= 1280;
 	m_height 	= 720;
@@ -46,9 +46,11 @@ cOptixParticlesRenderer::cOptixParticlesRenderer(bool shareBuffer=false)
 	m_numRenderSteps	= 10;
 	m_denoiserEnabled	= false;
 	m_bufferPtr			= 0;
+	m_sphere			= 0;
+	m_pngEncoder		= 0;
 }
 
-cOptixParticlesRenderer::~cOptixParticlesRenderer ( )
+cOptixRenderer::~cOptixRenderer ( )
 {
 #ifdef POST_PROCESSING
 	m_clDenoiser->destroy();
@@ -56,14 +58,97 @@ cOptixParticlesRenderer::~cOptixParticlesRenderer ( )
 	m_denoiserStage->destroy();
 #endif
 	m_context->destroy();
-	delete [] m_sphere;
-	delete m_pngEncoder;
+	if (m_sphere)
+		delete [] m_sphere;
+	if (m_pngEncoder)
+		delete m_pngEncoder;
 
 }
-//
-//=======================================================================================
-//
-void cOptixParticlesRenderer::init ( int width, int height, std::vector<float> *pos, float *min, float *max)
+
+void cOptixRenderer::init ( int width, int height, float *min, float *max)
+{
+	m_width 	= width;
+	m_height 	= height;
+	m_hfov    	= 60.0f;
+
+	m_aabb.set( (float3) {min[0], min[1], min[2]}, (float3){max[0], max[1], max[2]} );
+	const float max_dim = fmaxf(m_aabb.extent(1), m_aabb.extent(2)); // max of y, z components
+	m_eye    = m_aabb.center() + make_float3( 0.0f, 0.0f, max_dim*5.0f );
+	m_lookAt = m_aabb.center();
+	createContext ();
+	createMaterial();
+}
+
+void cOptixRenderer::loadSpheres(size_t nSpheres, size_t group, float *pos, float *color, float *raddi)
+{
+	size_t i;
+
+	if (!contextCreated)
+		return;
+
+	Buffer buffer;
+	Geometry geom;
+	GeometryInstance instance;
+	GeometryGroup geoGroup;
+	sightSphereColor *spheres;
+
+	buffer = m_context->createBuffer(RT_BUFFER_INPUT);
+	buffer->setFormat(RT_FORMAT_USER);
+	buffer->setElementSize(sizeof(sightSphereColor));
+	buffer->setSize(nSpheres);
+	buffer->validate();
+
+	// map buffer for writing by host
+	spheres 	= reinterpret_cast<sightSphereColor*>(buffer->map());
+	for (i=0;i<nSpheres;i++)
+	{
+		spheres[i].center.x = pos[i*4];
+		spheres[i].center.y = pos[i*4+1];
+		spheres[i].center.z = pos[i*4+2];
+		spheres[i].center.w = raddi[i];
+
+		spheres[i].color.x = color[i*4];
+		spheres[i].color.y = color[i*4+1];
+		spheres[i].color.z = color[i*4+2];
+		spheres[i].color.w = color[i*4+3];
+	}
+	buffer->unmap();
+	geom = m_context->createGeometry();
+	geom->setPrimitiveCount(nSpheres);
+	geom->setBoundingBoxProgram(
+            m_context->createProgramFromPTXFile("shaders/spheres.ptx", "bounds"));
+	geom->setIntersectionProgram(
+            m_context->createProgramFromPTXFile("shaders/spheres.ptx", "robust_intersect"));
+	geom["sphere_buffer"]->set(buffer);
+
+	// Create geometry instance
+	instance = m_context->createGeometryInstance();
+	instance->setGeometry( geom );
+	instance->setMaterialCount( 1 );
+	instance->setMaterial( 0, m_material );
+
+	geoGroup = m_context->createGeometryGroup();
+	geoGroup->setAcceleration( m_context->createAcceleration("Trbvh") );
+	geoGroup->setChildCount(1);
+	geoGroup->setChild( 0, instance );
+	m_vGeoGroup.push_back(geoGroup);
+}
+
+void cOptixRenderer::genOptixRoot()
+{
+	size_t i, nChilds = m_vGeoGroup.size();
+	m_root = m_context->createGroup();
+	m_root->setChildCount( m_vGeoGroup.size() );
+	m_root->setAcceleration( m_context->createAcceleration("Trbvh") );
+
+	for (i=0; i<nChilds; i++)
+		m_root->setChild( i, m_vGeoGroup[i] );
+
+	m_context["top_object"]->set( m_root );
+	m_context["top_shadower"]->set( m_root );
+}
+
+void cOptixRenderer::init ( int width, int height, std::vector<float> *pos, float *min, float *max)
 {
 	m_width 	= width;
 	m_height 	= height;
@@ -146,21 +231,21 @@ void cOptixParticlesRenderer::init ( int width, int height, std::vector<float> *
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::setMouseHandler (cMouseHandler *mouseH)
+void cOptixRenderer::setMouseHandler (cMouseHandler *mouseH)
 {
 	m_mouseH = mouseH;
 }
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::setKeyboardHandler (cKeyboardHandler *keyHandler)
+void cOptixRenderer::setKeyboardHandler (cKeyboardHandler *keyHandler)
 {
 	m_keyboardHandler = keyHandler;
 }
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::updateCamera()
+void cOptixRenderer::updateCamera()
 {
 	sutil::calculateCameraVariables(
 			  m_eye, m_lookAt, m_up, m_hfov, m_ratio,
@@ -193,7 +278,7 @@ void cOptixParticlesRenderer::updateCamera()
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::updateView ( )
+void cOptixRenderer::updateView ( )
 {
 	static int lastX=0, lastY=0;
 	switch (m_mouseH->getButton())
@@ -240,7 +325,7 @@ void cOptixParticlesRenderer::updateView ( )
 //
 //=======================================================================================
 //
-bool cOptixParticlesRenderer::displayProgressive (unsigned char *pixels)
+bool cOptixRenderer::displayProgressive (unsigned char *pixels)
 {
 
 	bool streamReady = false;
@@ -271,7 +356,7 @@ bool cOptixParticlesRenderer::displayProgressive (unsigned char *pixels)
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::display (unsigned char *pixels)
+void cOptixRenderer::display (unsigned char *pixels)
 {
 	double fpsexpave = 0.0;
 	static unsigned frame_count = 0;
@@ -354,12 +439,16 @@ void cOptixParticlesRenderer::display (unsigned char *pixels)
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::createContext ( 	)
+void cOptixRenderer::createContext ( 	)
 {
 	// Set up context
 	m_context = Context::create();
 		m_context->setRayTypeCount( 2 );
 	std::vector<int> devices = m_context->getEnabledDevices();
+
+	std::cout << "Num devices available: " << devices.size() << std::endl;
+	for (int i=0;i<devices.size();i++)
+		std::cout <<  "Device " << i << " has name " << devices[i] << std::endl;
 
 
 #ifndef POST_PROCESSING
@@ -377,8 +466,9 @@ void cOptixParticlesRenderer::createContext ( 	)
 
 	if (m_shareBuffer)
 	{
-		m_bufferPtr = buffer->getDevicePointer(0);
+		m_bufferPtr = buffer->getDevicePointer(devices[0]);
 	}
+
 #else
 	m_context->setEntryPointCount( ENTRY_POINT_FLOAT4_TO_DENOISED_COLOR + 1 );
 	// Output buffer
@@ -468,11 +558,14 @@ void cOptixParticlesRenderer::createContext ( 	)
 	seed->unmap();
 	m_context["rnd_seeds"]->setBuffer(seed);
 
+
+	contextCreated = 1;
+
 }
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::createContextProgressive (	)
+void cOptixRenderer::createContextProgressive (	)
 {
 	// Set up context
 	m_context = Context::create();
@@ -529,7 +622,7 @@ void cOptixParticlesRenderer::createContextProgressive (	)
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::createMaterial(	)
+void cOptixRenderer::createMaterial(	)
 {
 	Program chp = m_context->createProgramFromPTXFile ( "shaders/shaders.ptx", "closest_hit_radiance_AO_phong" );
 	//Program ahs = m_context->createProgramFromPTXFile ( "shaders/shaders.ptx", "any_hit_shadow" );
@@ -537,7 +630,6 @@ void cOptixParticlesRenderer::createMaterial(	)
 	m_material = m_context->createMaterial();
 	m_material->setClosestHitProgram(0, chp);
 	m_material->setAnyHitProgram(1, aho);
-
 
 	// Setting Lights
     //const float max_dim = fmaxf(m_aabb.extent(0), m_aabb.extent(1)); // max of x, y components
@@ -552,14 +644,11 @@ void cOptixParticlesRenderer::createMaterial(	)
     lights[1].pos *= max_dim * 10.0f;
     lights[2].pos *= max_dim * 10.0f;
 */
-
     BasicLight lights[] = {
     	{ m_aabb.m_min,  make_float3( 1.0f, 1.0f, 1.0f ), 0, 0 },
         { m_aabb.m_max, make_float3( 1.0f, 1.0f, 1.0f ), 1, 0 },
         { make_float3(  0.0f, 0.0f , 0.0f ), make_float3( 1.0f, 1.0f, 1.0f ), 0, 0 }
     };
-
-
     Buffer light_buffer = m_context->createBuffer( RT_BUFFER_INPUT );
     light_buffer->setFormat( RT_FORMAT_USER );
     light_buffer->setElementSize( sizeof( BasicLight ) );
@@ -577,7 +666,7 @@ void cOptixParticlesRenderer::createMaterial(	)
     m_context["ambient_light_color"]->setFloat(1.0f,1.0f,1.0f);
 
     // AO shader
-    m_context["occlusion_distance"]->setFloat(20.0f);
+    m_context["occlusion_distance"]->setFloat(10.0f);
     m_context["sqrt_occlusion_samples"]->setInt(1);
 
 //    Program transparent_ch = m_context->createProgramFromPTXFile( "shaders/transparent.ptx", "closest_hit_radiance" );
@@ -586,7 +675,7 @@ void cOptixParticlesRenderer::createMaterial(	)
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *min, float *max)
+void cOptixRenderer::createGeometry (std::vector<float> *pos, float *min, float *max)
 {
 	unsigned int 	i = 0, j, k, numParticles;
 	unsigned int	posIdx = 0;
@@ -602,6 +691,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 	//m_numGroups = 1;
 	std::cout << "Particles: " << numParticles << " Groups: " << m_numGroups << std::endl;
 
+	// TODO: check when m_numGroups is 0
 	for (k=0; k<m_numGroups; k++ )
 	{
 		Buffer colorBuffer 	= m_context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_FLOAT4, NUM_PARTICLES_PER_GROUP );
@@ -640,7 +730,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 		//particles->setIntersectionProgram( m_context->createProgramFromPTXFile( "shaders/particles.ptx", "sphere_array_intersect" ) );
 		m_sphere[k]["particle_buffer"]->setBuffer ( posBuffer );
 		m_sphere[k]["color_buffer"]->setBuffer (colorBuffer);
-		m_sphere[k]["radius"]->setFloat(2.0f);
+		m_sphere[k]["radius"]->setFloat(1.0f);
 	}
 
 	// loading the remaining particles
@@ -680,6 +770,8 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 	//particles->setIntersectionProgram( m_context->createProgramFromPTXFile( "shaders/particles.ptx", "sphere_array_intersect" ) );
 	m_sphere[k]["particle_buffer"]->setBuffer ( posBuffer );
 	m_sphere[k]["color_buffer"]->setBuffer (colorBuffer);
+	m_sphere[k]["radius"]->setFloat(1.0f);
+
 
 
 	// One side of the box
@@ -717,7 +809,7 @@ void cOptixParticlesRenderer::createGeometry (std::vector<float> *pos, float *mi
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::createInstance ()
+void cOptixRenderer::createInstance ()
 {
 	unsigned int i;
 
@@ -751,7 +843,7 @@ void cOptixParticlesRenderer::createInstance ()
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::resetAccumulation ()
+void cOptixRenderer::resetAccumulation ()
 {
 	m_frameAccum = 0;
 	m_context[ "frame"                  ]->setUint( 0 );
@@ -761,7 +853,7 @@ void cOptixParticlesRenderer::resetAccumulation ()
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::setBufferIds( const std::vector<Buffer>& buffers, Buffer top_level_buffer )
+void cOptixRenderer::setBufferIds( const std::vector<Buffer>& buffers, Buffer top_level_buffer )
 {
 	top_level_buffer->setSize( buffers.size() );
 	int* data = reinterpret_cast<int*>( top_level_buffer->map() );
@@ -773,7 +865,7 @@ void cOptixParticlesRenderer::setBufferIds( const std::vector<Buffer>& buffers, 
 //=======================================================================================
 //
 #ifdef POST_PROCESSING
-void cOptixParticlesRenderer::setupPostprocessing( )
+void cOptixRenderer::setupPostprocessing( )
 {
 	// create stages only once: they will be reused in several command lists without being re-created
 	m_tonemapStage = m_context->createBuiltinPostProcessingStage("TonemapperSimple");
@@ -816,7 +908,7 @@ void cOptixParticlesRenderer::setupPostprocessing( )
 //
 //=======================================================================================
 //
-void cOptixParticlesRenderer::onKeyboardEvent ()
+void cOptixRenderer::onKeyboardEvent ()
 {
 	if ( m_keyboardHandler->getState() == cKeyboardHandler::DOWN )
 	{
@@ -831,7 +923,7 @@ void cOptixParticlesRenderer::onKeyboardEvent ()
 
 }
 
-void cOptixParticlesRenderer::getPixels (unsigned char *pixels)
+void cOptixRenderer::getPixels (unsigned char *pixels)
 {
 
 	sutil::displayBuffer(pixels, m_context["output_buffer"]->getBuffer()->get());

@@ -17,5 +17,7 @@ template <typename T> T Min (T x, T y )
 }
 
 int		loadAscii 	(const char* filename, std::vector<float> *positions, std::vector<float> *nrg, float *min, float *max, unsigned int decimation);
+std::string getFileExtension(std::string file);
+void find_minmax_all(const float *pos, int n, float *min, float *max);
 
 #endif /* LOADERS_H_ */
