@@ -80,6 +80,7 @@ static __device__
 void intersect_sphere(int primIdx)
 {
 	const float4 center4=sphere_buffer[primIdx].center;
+	const float3 color=make_float3(sphere_buffer[primIdx].color);
 	const float3 center=make_float3 (center4);
 	const float radius = center4.w;
 
@@ -126,7 +127,7 @@ void intersect_sphere(int primIdx)
 #ifdef COLOR_LOOK_UP
 			shading_color	= colorLookUp((int)colorIdx%4);
 #else
-			shading_color	= make_float3 (1.0f);
+			shading_color=color;
 #endif
 			//shading_color	= make_float3(1.0f, 0.0f, 0.0f);
 

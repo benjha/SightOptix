@@ -6,17 +6,9 @@
 #ifndef LOADERS_H_
 #define LOADERS_H_
 
-template <typename T> T Max (T x, T y )
-{
-	return x > y ? x : y;
-}
+class cParticles;
 
-template <typename T> T Min (T x, T y )
-{
-	return x < y ? x : y;
-}
-
-int		loadAscii 	(const char* filename, std::vector<float> *positions, std::vector<float> *nrg, float *min, float *max, unsigned int decimation);
+int parseAscii (const char* filename, cParticles *p, unsigned int decimation);
 std::string getFileExtension(std::string file);
 void find_minmax_all(const float *pos, int n, float *min, float *max);
 

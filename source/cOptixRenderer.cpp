@@ -65,18 +65,20 @@ cOptixRenderer::~cOptixRenderer ( )
 
 }
 
-void cOptixRenderer::init ( int width, int height, float *min, float *max)
+void cOptixRenderer::init ( int width, int height, float *min, float *max, size_t steps)
 {
 	m_width 	= width;
 	m_height 	= height;
 	m_hfov    	= 60.0f;
 
 	m_aabb.set( (float3) {min[0], min[1], min[2]}, (float3){max[0], max[1], max[2]} );
-	const float max_dim = fmaxf(m_aabb.extent(1), m_aabb.extent(2)); // max of y, z components
-	m_eye    = m_aabb.center() + make_float3( 0.0f, 0.0f, max_dim*5.0f );
+	float max_dim = fmaxf(m_aabb.extent(1), m_aabb.extent(2)); // max of y, z components
+	max_dim = fmaxf(m_aabb.extent(0), max_dim);
+	m_eye    = m_aabb.center() + make_float3( 0.0f, 0.0f, max_dim );
 	m_lookAt = m_aabb.center();
 	createContext ();
 	createMaterial();
+	DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
 }
 
 void cOptixRenderer::loadSpheres(size_t nSpheres, size_t group, float *pos, float *color, float *raddi)
@@ -92,53 +94,84 @@ void cOptixRenderer::loadSpheres(size_t nSpheres, size_t group, float *pos, floa
 	GeometryGroup geoGroup;
 	sightSphereColor *spheres;
 
-	buffer = m_context->createBuffer(RT_BUFFER_INPUT);
-	buffer->setFormat(RT_FORMAT_USER);
-	buffer->setElementSize(sizeof(sightSphereColor));
-	buffer->setSize(nSpheres);
-	buffer->validate();
-
-	// map buffer for writing by host
-	spheres 	= reinterpret_cast<sightSphereColor*>(buffer->map());
-	for (i=0;i<nSpheres;i++)
+	try
 	{
-		spheres[i].center.x = pos[i*4];
-		spheres[i].center.y = pos[i*4+1];
-		spheres[i].center.z = pos[i*4+2];
-		spheres[i].center.w = raddi[i];
+		buffer = m_context->createBuffer(RT_BUFFER_INPUT);
+		buffer->setFormat(RT_FORMAT_USER);
+		buffer->setElementSize(sizeof(sightSphereColor));
+		buffer->setSize(nSpheres);
+		buffer->validate();
 
-		spheres[i].color.x = color[i*4];
-		spheres[i].color.y = color[i*4+1];
-		spheres[i].color.z = color[i*4+2];
-		spheres[i].color.w = color[i*4+3];
+		// map buffer for writing by host
+		spheres 	= reinterpret_cast<sightSphereColor*>(buffer->map());
+		for (i=0;i<nSpheres;i++)
+		{
+			spheres[i].center.x = pos[i*4];
+			spheres[i].center.y = pos[i*4+1];
+			spheres[i].center.z = pos[i*4+2];
+			spheres[i].center.w = raddi[i];
+			spheres[i].color.x = color[i*4];
+			spheres[i].color.y = color[i*4+1];
+			spheres[i].color.z = color[i*4+2];
+			spheres[i].color.w = color[i*4+3];
+		}
+		buffer->unmap();
+		geom = m_context->createGeometry();
+		geom->setPrimitiveCount(nSpheres);
+		geom->setBoundingBoxProgram(
+				m_context->createProgramFromPTXFile("shaders/spheres.ptx", "bounds"));
+		geom->setIntersectionProgram(
+				m_context->createProgramFromPTXFile("shaders/spheres.ptx", "robust_intersect"));
+		geom["sphere_buffer"]->set(buffer);
+
+		// Create geometry instance
+		instance = m_context->createGeometryInstance();
+		instance->setGeometry( geom );
+		instance->setMaterialCount( 1 );
+		instance->setMaterial( 0, m_material );
+
+		geoGroup = m_context->createGeometryGroup();
+		geoGroup->setAcceleration( m_context->createAcceleration("Trbvh") );
+		geoGroup->setChildCount(1);
+		geoGroup->setChild( 0, instance );
+		m_vGeoGroup.push_back(geoGroup);
+	} catch( Exception& e )
+	{
+		std::cout << "Couldn't generate sphere data" << e.getErrorString().c_str() << std::endl;
+		exit(1);
 	}
-	buffer->unmap();
-	geom = m_context->createGeometry();
-	geom->setPrimitiveCount(nSpheres);
-	geom->setBoundingBoxProgram(
-            m_context->createProgramFromPTXFile("shaders/spheres.ptx", "bounds"));
-	geom->setIntersectionProgram(
-            m_context->createProgramFromPTXFile("shaders/spheres.ptx", "robust_intersect"));
-	geom["sphere_buffer"]->set(buffer);
+}
 
-	// Create geometry instance
-	instance = m_context->createGeometryInstance();
-	instance->setGeometry( geom );
-	instance->setMaterialCount( 1 );
-	instance->setMaterial( 0, m_material );
+void cOptixRenderer::addTimeStep ()
+{
+	size_t i, nChilds = m_vGeoGroup.size();
+	Selector step =  m_context->createSelector();
+	step->setChildCount(nChilds);
+	//TODO: write visit program
+	//step->setVisitProgram();
 
-	geoGroup = m_context->createGeometryGroup();
-	geoGroup->setAcceleration( m_context->createAcceleration("Trbvh") );
-	geoGroup->setChildCount(1);
-	geoGroup->setChild( 0, instance );
-	m_vGeoGroup.push_back(geoGroup);
+	for (i=0;i<nChilds;i++)
+		step->setChild(i, m_vGeoGroup[i]);
+
+	//TODO:
+	//m_vTimeStep.push_back(step);
+	//m_vGeoGroup.clear();
+	//std::vector<optix::GeometryGroup>().swap(m_vGeoGroup);
 }
 
 void cOptixRenderer::genOptixRoot()
 {
+	// TODO: change next line to enable Timesteps - selector
+	//size_t i, nChilds = m_vTimeStep.size();
 	size_t i, nChilds = m_vGeoGroup.size();
+	std::cout << "Root will have " << nChilds << " childs\n";
+	if (nChilds==0)
+	{
+		std::cout << "No childs to add\n";
+		exit(1);
+	}
 	m_root = m_context->createGroup();
-	m_root->setChildCount( m_vGeoGroup.size() );
+	m_root->setChildCount( nChilds );
 	m_root->setAcceleration( m_context->createAcceleration("Trbvh") );
 
 	for (i=0; i<nChilds; i++)
@@ -147,6 +180,14 @@ void cOptixRenderer::genOptixRoot()
 	m_context["top_object"]->set( m_root );
 	m_context["top_shadower"]->set( m_root );
 }
+
+void cOptixRenderer::launch ()
+{
+	m_context->validate();
+	m_context->launch ( ENTRY_POINT_MAIN_SHADING, 0 );
+	DeviceMemoryLogger::logCurrentMemoryUsage(m_context, std::cout);
+}
+
 
 void cOptixRenderer::init ( int width, int height, std::vector<float> *pos, float *min, float *max)
 {
@@ -550,7 +591,6 @@ void cOptixRenderer::createContext ( 	)
 	m_context["jitter_factor"		]->setFloat( 1.0f);
 	m_context["frame"				]->setUint( 0 );
 
-
 	// Random seed buffer
 	Buffer seed = m_context->createBuffer( RT_BUFFER_INPUT , RT_FORMAT_UNSIGNED_INT, m_width, m_height);
 	unsigned int* seeds = static_cast<unsigned int*>( seed->map() );
@@ -615,6 +655,7 @@ void cOptixRenderer::createContextProgressive (	)
 	m_context["U"					]->setFloat( m_U );
 	m_context["V"					]->setFloat( m_V );
 	m_context["W"					]->setFloat( m_W );
+
 
 	m_context->setAttribute(RT_CONTEXT_ATTRIBUTE_GPU_PAGING_FORCED_OFF, 1);
 

@@ -42,11 +42,13 @@ public:
 	~cOptixRenderer	(	);
 
 	// initialize Optix contex, framebuffer size and camera
-	// position based on min/max values
-	void init (int width, int height, float *min, float *max);
+	// position based on min/max values  and allocate
+	// number of steps
+	void init (int width, int height, float *min, float *max, size_t steps=1);
 	void init (int width, int height,
                std::vector<float> *pos, float *min, float *max );
-	// initialize array of spheres and creates Optix data structures
+
+	// initialize array of spheres and creates Optix scene graph
 	// organized as:
 	//
 	//  |---GeometryGroup
@@ -55,15 +57,26 @@ public:
 	//
 	void loadSpheres ( size_t nSpheres, size_t group,
                       float *pos, float *color, float *radii );
+	// store i-th time step, updating Optix's scene graph to"
+	//
+	//  |---TimeStep (GeometryGroup)
+	//      |---GeometryGroup
+	//          |---GeometryInstance
+	//              |---Geometry
+	//
+	void addTimeStep ();
 	// creates Optix's root to complete the hierarchy created in
 	// loadSpheres method:
 	//
 	//  Group
-	//  |---GeometryGroup
-	//      |---GeometryInstance
-	//          |---Geometry
+	//  |---TimeStep (GeometryGroup)
+	//      |---GeometryGroup
+	//          |---GeometryInstance
+	//              |---Geometry
 	//
 	void genOptixRoot ();
+	// validate context and launch the renderer
+	void launch ();
 	bool displayProgressive ( unsigned char *pixels	);
 	void display ( unsigned char *pixels	);
 	void setMouseHandler ( cMouseHandler *mouseH );
@@ -127,7 +140,8 @@ private:
 	std::vector<optix::GeometryInstance> m_GeoInstance[NUM_GROUPS];
 	// Optix geometry groups
 	std::vector<optix::GeometryGroup> m_vGeoGroup;
-
+	// GeometryGroup for Time step
+	std::vector<optix::Selector> m_vTimeStep;
 
 
 

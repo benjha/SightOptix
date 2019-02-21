@@ -16,6 +16,9 @@
  * 2002-2009 akohlmey@cmm.chem.upenn.edu, vmd@ks.uiuc.edu
  */
 
+#ifndef __PERIODIC_TABLE_H__
+#define __PERIODIC_TABLE_H__
+
 #include <string.h>
 #include <ctype.h>
 
@@ -64,7 +67,7 @@ static const float pte_mass[] = {
  * J. Phys. Chem., 68, 441 - 452, 1964, 
  * except the value for H, which is taken from R.S. Rowland & R. Taylor, 
  * J.Phys.Chem., 100, 7384 - 7391, 1996. Radii that are not available in 
- * either of these publications have RvdW = 2.00 Å.
+ * either of these publications have RvdW = 2.00 ï¿½.
  * The radii for Ions (Na, K, Cl, Ca, Mg, and Cs are based on the CHARMM27 
  * Rmin/2 parameters for (SOD, POT, CLA, CAL, MG, CES) by default.
  */
@@ -129,6 +132,31 @@ static float get_pte_vdw_radius(const int idx)
 
     return pte_vdw_radius[idx];
 }
+
+// From VMD
+// return a 'default' value for a given atom name
+static float default_radius(const char *nm)
+{
+  float val = 1.5;
+  // some names start with a number
+  while (*nm && isdigit(*nm))
+    nm++;
+  if(nm) {
+    switch(toupper(nm[0])) {
+      // These are similar to the values used by X-PLOR with sigma=0.8
+      // see page 50 of the X-PLOR 3.1 manual
+      case 'H' : val = 1.00f; break;
+      case 'C' : val = 1.50f; break;
+      case 'N' : val = 1.40f; break;
+      case 'O' : val = 1.30f; break;
+      case 'F' : val = 1.20f; break;
+      case 'S' : val = 1.90f; break;
+    }
+  }
+
+  return val;
+}
+
 
 static int get_pte_idx(const char *label)
 {
@@ -202,4 +230,6 @@ int main() {
   } 
   return 0;
 }
+#endif
+
 #endif

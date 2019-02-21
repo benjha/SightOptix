@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "../header/loaders.h"
+#include "../header/cParticles.h"
 
 
 
@@ -23,22 +24,21 @@ std::string getFileExtension(std::string file)
 
 // load dataset with a decimation factor.  Useful when data does not fit in GPU Memory
 
-int loadAscii (const char* filename, std::vector<float> *positions, std::vector<float> *nrg, float *min, float *max, unsigned int decimation)
+int parseAscii (const char* filename, cParticles *p, unsigned int decimation)
 {
-	int numParticles = 0;
-	static int numComponents = 4;
+	size_t j = 0;
+	float cPos[3]; // current position
+	size_t g = 0;
 	std::cout << "loading " << filename << std::endl;
+
 	// first parse the file
-	std::string 	point;
 	std::ifstream 	file (filename, std::ios::binary);
 	char 			*memblock;
 
 	double x, y, z, energy, id;
 
 	if (!file.is_open())
-	{
 		return false;
-	}
 
 	// get size of file
 	file.seekg(0, file.end);
@@ -56,139 +56,71 @@ int loadAscii (const char* filename, std::vector<float> *positions, std::vector<
 
 	char* ptr = memblock;
 	char* end = 0;
-	unsigned int  recordsRead = 0;
-	 //float x = strtod(memblock, &end);
 
 	while (ptr != end)
 	{
-
-		if (numParticles%decimation == 0)
+		if (p->numParticles()%decimation == 0)
 		{
 			if (end)
-			{
 				ptr = end;
-			}
 
-			z = strtof(ptr, &end);
-			ptr = end;
+			cPos[0]=strtof(ptr, &end); // x
+			ptr=end;
+			cPos[1]=strtof(ptr, &end); // y
+			ptr=end;
+			cPos[2]=strtof(ptr, &end); // z
+			ptr=end;
+			energy=strtof(ptr, &end);
 
-			y = strtof(ptr, &end);
-			ptr = end;
-
-			x = strtof(ptr, &end);
-			ptr = end;
-
-			energy = strtof(ptr, &end);
-
-			if (numParticles == 0)
-			{
-				min[0] = x;
-				min[1] = y;
-				min[2] = z;
-				min[3] = energy;
-
-				max[0] = x;
-				max[1] = y;
-				max[2] = z;
-				max[3] = energy;
-			}
+			if (p->numParticles() == 0)
+				p->initMinMax (cPos, energy);
 			else
+				p->findMinMax(cPos, energy);
+
+			p->pos()[g].push_back(cPos[0]); // x
+			p->pos()[g].push_back(cPos[1]); // y
+			p->pos()[g].push_back(cPos[2]); // z
+			p->pos()[g].push_back(1.0f); // w
+			p->radius()[g].push_back(1.44f);
+			p->nrg()[g].push_back(energy);
+			// calculate color later, but allocate space now
+			p->color()[g].push_back(1.0f); // r
+			p->color()[g].push_back(1.0f); // g
+			p->color()[g].push_back(1.0f); // b
+			p->color()[g].push_back(1.0f); // a
+
+			if (j > PARTICLES_PER_GROUP)
 			{
-				min[0] = Min<float> (x, min[0]);
-				min[1] = Min<float> (y, min[1]);
-				min[2] = Min<float>  (z, min[2]);
-
-				max[0] = Max<float> (x, max[0]);
-				max[1] = Max<float> (y, max[1]);
-				max[2] = Max<float> (z, max[2]);
-
-				min[3] = Min<float> (energy,min[3]);
-				max[3] = Max<float> (energy,max[3]);
+				g++;
+				j=0;
 			}
+			p->incNumParticles();
 
-
-			positions->push_back 	(x);
-			positions->push_back 	(y);
-			positions->push_back 	(z);
-			positions->push_back 	(energy);
-
-			if (positions->size()%(1000000*numComponents) == 0 && numParticles > 1) // print every million atoms read
+			if (p->numParticles()%1000000 == 0) // print every millionth atoms read
 			{
-				recordsRead = (positions->size()/numComponents) / 1000000;
-
-				std::cout << "Records read: " << recordsRead << "M of " << numParticles / 1000000 << "M" << std::endl; // divide by 3 because holds 3 variables.
-
+				std::cout << "Records read: " << p->numParticles() / 1000000 << "M" << std::endl;
 			}
+			j++;
 		}
 		else // just go through the buffer
 		{
 			if (end)
 				ptr = end;
 
-			//x
-			x = strtof(ptr, &end);
-			ptr = end;
-
-			//y
-			y = strtof(ptr, &end);
-			ptr = end;
-
-			//z
-			z = strtof(ptr, &end);
-			ptr = end;
-
-			//energy
-			energy = strtof(ptr, &end);
-			//ptr = end;
-			//id
-			//id = strtof(ptr, &end);
-
+			cPos[0]=strtof(ptr, &end); // x
+			ptr=end;
+			cPos[1]=strtof(ptr, &end); // y
+			ptr=end;
+			cPos[2]=strtof(ptr, &end); // z
+			ptr=end;
+			energy=strtof(ptr, &end);
 		}
-		numParticles++;
 	}
+	p->initNumGroups (g+1);
 	delete [] memblock;
-
-	std::cout << "Num atoms: " 			<< " " << positions->size()/numComponents << std::endl;
-	//std::cout << "Num elements: " 			<< " " << vPosNRG.size()	<< std::endl;
-
-	//std::cout << "Min = {" << min[0] 	<< ", " << min[1] << ", " << min[2] << " } \n";
-	//std::cout << "Max = {" << max[0] 	<< ", " << max[1] << ", " << max[2] << " } \n";
-	std::cout << "Energy min: " << min[3] << " Energy max: " << max[3] << std::endl;
 
 	file.close();
 
 	return true;
 
 }
-
-
-void find_minmax_all(const float *pos, int n, float *min, float *max)
-{
-  float x1, x2, y1, y2, z1, z2;
-  int i=0;
-
-  // return immediately if there are no atoms, or no atoms are on.
-  if (n < 1) return;
-
-  // initialize min/max to first 'on' atom, and advance the counter.
-  pos += 4L*i;
-  x1 = x2 = pos[0];
-  y1 = y2 = pos[1];
-  z1 = z2 = pos[2];
-  pos += 4;
-  i++;
-
-  for (; i < n; i++) {
-    if (pos[0] < x1) x1 = pos[0];
-    if (pos[0] > x2) x2 = pos[0];
-    if (pos[1] < y1) y1 = pos[1];
-    if (pos[1] > y2) y2 = pos[1];
-    if (pos[2] < z1) z1 = pos[2];
-    if (pos[2] > z2) z2 = pos[2];
-    pos += 4;
-  }
-  min[0] = x1; min[1] = y1; min[2] = z1;
-  max[0] = x2; max[1] = y2; max[2] = z2;
-}
-
-

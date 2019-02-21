@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "globals.h"
-#include "../molparser/cPDBParser.h"
+#include "../parsers/cPDBParser.h"
 
 typedef struct
 {
@@ -31,28 +31,53 @@ public:
 	~cParticles ();
 	// initializes particles from PDB dataset
 	void loadFromPDB (size_t natoms, molfile_atom_t *atom,  molfile_timestep_t timestep);
-	// gets number of particles
+	// generate colors from -energy- values and color table
+	void genColors ();
+	// initializes groups given g
+	void initNumGroups (size_t g) {m_nGroups=g;};
+	// gets the total number of particles of whole system
 	size_t numParticles () { return m_nParticles; };
+	// increments numParticles counter
+	void incNumParticles () { m_nParticles++; };
+	// gets num. of particles of the nth group
+	size_t numParticles(size_t n) {return m_pos[n].size()/4;};
 	// gets the number of groups used to allocate the particles
 	unsigned int groups () { return m_nGroups; };
 	// gets model's bounding box
 	boundingBox bBox () { return m_bb; };
-	// gets min pos value
-	float *minPos () { return m_posMin;};
-	// gets max pos value
-	float *maxPos () { return m_posMax;};
+	// gets pos vector
+	std::vector<float> *pos () {return m_pos;};
 	// gets pos array at nth group
-	float *pos(unsigned int n) {return m_pos[n].data();};
+	float *pos(size_t n) {return m_pos[n].data();};
+	// gets min pos value
+	float *posMin () { return m_posMin;};
+	// gets max pos value
+	float *posMax () { return m_posMax;};
+	// gets energy vector
+	std::vector<float> *nrg () {return m_nrg;};
+	// gets min max energy values vector
+	float *nrgMinMax () {return m_nrgMinMax;};
+	// gets color vector
+	std::vector<float> *color() {return m_color;};
 	// gets color array at nth group
 	float *color(unsigned int n) {return m_color[n].data();};
+	// gets radius vector
+	std::vector<float> *radius(){return m_radius;};
 	// gets radius array at nth group
-	float *radii(unsigned int n) {return m_radius[n].data();};
+	float *radius(unsigned int n) {return m_radius[n].data();};
+	// initialize min/max position and energy values
+	void initMinMax (float *p, float nrg);
+	// gets min/max values given position and energy values
+	void findMinMax (float *p, float nrg);
 
 private:
-	//initializes particle colors
+	//initializes particle colors by atomic number
 	void initColor (size_t g, int atomicNumber);
-	// get color given the atomic number of the particle
-	void colorByAtomicNumber (int number, float *color);
+	//initializes particle colors by atom name
+	void initColor (size_t g, char name);
+	// generates color given the atomic number
+	// or the name of the particle
+	void colorBy (float *color, int number=0, char name=' ');
 	// initialize model's bounding box
 	void initBB ( );
 	// initialize min/max position values given p
@@ -78,7 +103,12 @@ private:
 	// group id for a given particle, particles from the same group
 	// e.g. resiudals, micro-clusters, sub-molecules
 	std::vector<size_t> m_resid[NUM_GROUPS];
+	// Energy values retrieved from ascii files
+	std::vector<float> m_nrg[NUM_GROUPS];
+	// energy min-max values
+	float m_nrgMinMax[2];
 	//--- add additional variables on demand ---
+
 	// bounding box of the system
 	boundingBox			m_bb;
 };

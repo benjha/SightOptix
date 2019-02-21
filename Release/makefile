@@ -10,7 +10,7 @@ RM := rm -rf
 -include sources.mk
 -include subdir.mk
 -include source/subdir.mk
--include molparser/subdir.mk
+-include parsers/subdir.mk
 -include frameserver/source/subdir.mk
 -include frameserver/communications/asio/impl/subdir.mk
 

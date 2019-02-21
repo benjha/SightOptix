@@ -8,10 +8,9 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "../molparser/readpdb.h"
-#include "../molparser/molfile_plugin.h"
-#include "../molparser/pdbplugin.h"
-
+#include "../parsers/readpdb.h"
+#include "../parsers/molfile_plugin.h"
+#include "../parsers/pdbplugin.h"
 
 class cPDBParser
 {
